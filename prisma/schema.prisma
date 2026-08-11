@@ -1,0 +1,622 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Neon: DATABASE_URL adalah connection string pooled (via pgbouncer) dipakai
+  // saat runtime; DIRECT_URL adalah koneksi langsung dipakai hanya oleh
+  // `prisma db push`/migrate (pgbouncer transaction-mode tidak mendukung
+  // advisory lock yang dibutuhkan migrasi). Kalau providernya bukan Neon
+  // (tidak ada pooling terpisah), isi keduanya dengan URL yang sama.
+  directUrl = env("DIRECT_URL")
+}
+
+enum StaffRole {
+  TEACHER
+  GURU_BK
+  COORDINATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ConsentStatus {
+  PENDING
+  GRANTED
+  REVOKED
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  npsn      String?
+  region    String?
+  createdAt DateTime @default(now())
+
+  academicYears      AcademicYear[]
+  classes            Class[]
+  staff              StaffUser[]
+  students           Student[]
+  readingTexts       ReadingText[]
+  audioMaterials     AudioMaterial[]
+  worksheetTemplates WorksheetTemplate[]
+  exerciseModules    ExerciseModule[]
+  indicatorSnapshots IndicatorSnapshot[]
+  storyPrompts       StoryPrompt[]
+}
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  label     String
+  startDate DateTime
+  endDate   DateTime
+  active    Boolean  @default(true)
+
+  classes Class[]
+}
+
+model Class {
+  id                String       @id @default(cuid())
+  schoolId          String
+  school            School       @relation(fields: [schoolId], references: [id])
+  academicYearId    String
+  academicYear      AcademicYear @relation(fields: [academicYearId], references: [id])
+  grade             Int
+  name              String
+  homeroomTeacherId String?
+  homeroomTeacher   StaffUser?   @relation(fields: [homeroomTeacherId], references: [id])
+
+  students           Student[]
+  sessions           Session[]
+  kokurikulerQuizzes KokurikulerQuiz[]
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  schoolId     String
+  school       School    @relation(fields: [schoolId], references: [id])
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         StaffRole
+  createdAt    DateTime  @default(now())
+
+  homeroomClasses   Class[]
+  sessionsCreated   Session[]
+  teacherReviews    TeacherReview[]
+  auditLogs         AuditLog[]
+  characterReadings CharacterReading[]
+  finalConclusions  FinalConclusion[]
+
+  kokurikulerQuizzesCreated KokurikulerQuiz[]
+  kokurikulerEssaysGraded   KokurikulerAttempt[] @relation("KokurikulerEssayGrader")
+  kokurikulerReadings       KokurikulerReading[] @relation("KokurikulerReader")
+}
+
+model Student {
+  id            String        @id @default(cuid())
+  schoolId      String
+  school        School        @relation(fields: [schoolId], references: [id])
+  classId       String
+  class         Class         @relation(fields: [classId], references: [id])
+  name          String
+  nisn          String        @unique
+  pinHash       String
+  consentStatus ConsentStatus @default(PENDING)
+  archivedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  consents            Consent[]
+  submissions         Submission[]
+  exerciseAssignments ExerciseAssignment[]
+  consultTickets      ConsultTicket[]
+  feedbacks           Feedback[]
+  sessionTargets      SessionStudent[]
+  finalConclusion     FinalConclusion?
+
+  kokurikulerAttempts    KokurikulerAttempt[]
+  kokurikulerQuizTargets KokurikulerQuizStudent[]
+}
+
+model Consent {
+  id           String        @id @default(cuid())
+  studentId    String
+  student      Student       @relation(fields: [studentId], references: [id])
+  guardianName String
+  status       ConsentStatus @default(PENDING)
+  grantedAt    DateTime?
+  revokedAt    DateTime?
+  evidenceNote String?
+  createdAt    DateTime      @default(now())
+}
+
+model ReadingText {
+  id                String     @id @default(cuid())
+  schoolId          String
+  school            School     @relation(fields: [schoolId], references: [id])
+  title             String
+  body              String
+  gradeLevel        Int
+  theme             String?
+  estMinutes        Int        @default(5)
+  level             TestLevel? // terisi untuk materi tes Gestalt berlevel
+  quizJson          String? // comprehension questions: [{question, options[], correctIndex}]
+  openQuestionsJson String? // soal uraian dijawab tulis tangan: [{question, repeat?}]
+  createdAt         DateTime   @default(now())
+
+  sessions Session[]
+}
+
+model AudioMaterial {
+  id                String     @id @default(cuid())
+  schoolId          String
+  school            School     @relation(fields: [schoolId], references: [id])
+  title             String
+  fileUrl           String
+  transcript        String
+  durationS         Int
+  qcPassed          Boolean    @default(false)
+  qcNote            String?
+  level             TestLevel? // terisi untuk materi tes Gestalt berlevel
+  quizJson          String? // comprehension questions: [{question, options[], correctIndex}]
+  openQuestionsJson String? // soal uraian dijawab tulis tangan: [{question, repeat?}] — repeat = pengulangan pembacaan audio soal
+  questionsAudioUrl String? // rekaman pembacaan soal uraian; bila terisi, teks soal disembunyikan default agar konstruk menyimak terjaga
+  createdAt         DateTime   @default(now())
+
+  sessions Session[]
+}
+
+model WorksheetTemplate {
+  id           String @id @default(cuid())
+  schoolId     String
+  school       School @relation(fields: [schoolId], references: [id])
+  name         String
+  lineHeightMm Float  @default(8)
+  minWords     Int    @default(30)
+
+  sessions Session[]
+}
+
+model ExerciseModule {
+  id          String @id @default(cuid())
+  schoolId    String
+  school      School @relation(fields: [schoolId], references: [id])
+  aspect      String
+  title       String
+  description String
+  durationMin Int    @default(5)
+
+  assignments ExerciseAssignment[]
+}
+
+enum SessionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+// Level tes Grafologi Gestalt. LOW dipakai untuk screening awal karakter siswa.
+enum TestLevel {
+  LOW
+  MIDDLE
+  HIGH
+}
+
+model Session {
+  id                  String            @id @default(cuid())
+  classId             String
+  class               Class             @relation(fields: [classId], references: [id])
+  level               TestLevel         @default(LOW)
+  readingTextId       String?
+  readingText         ReadingText?      @relation(fields: [readingTextId], references: [id])
+  audioMaterialId     String?
+  audioMaterial       AudioMaterial?    @relation(fields: [audioMaterialId], references: [id])
+  worksheetTemplateId String
+  worksheetTemplate   WorksheetTemplate @relation(fields: [worksheetTemplateId], references: [id])
+  storyPromptId       String?
+  storyPrompt         StoryPrompt?      @relation(fields: [storyPromptId], references: [id])
+  label               String
+  opensAt             DateTime
+  closesAt            DateTime
+  createdById         String
+  createdBy           StaffUser         @relation(fields: [createdById], references: [id])
+  status              SessionStatus     @default(DRAFT)
+  createdAt           DateTime          @default(now())
+
+  submissions      Submission[]
+  targetedStudents SessionStudent[]
+}
+
+// Bila sesi punya baris di sini, hanya siswa terdaftar yang melihat/mengerjakan
+// sesi (screening individual). Tanpa baris = seluruh siswa kelas (perilaku lama).
+model SessionStudent {
+  id        String  @id @default(cuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId])
+}
+
+// Stimulus "gambar bercerita": gambar + kalimat pembuka yang dilanjutkan siswa
+// dengan tulisan tangan di lembar kerja.
+model StoryPrompt {
+  id          String    @id @default(cuid())
+  schoolId    String
+  school      School    @relation(fields: [schoolId], references: [id])
+  level       TestLevel
+  title       String
+  imageSlug   String // path relatif di public/, mis. "tes/gambar-bercerita-low.jpg"
+  starterText String
+  createdAt   DateTime  @default(now())
+
+  sessions Session[]
+}
+
+model Submission {
+  id               String    @id @default(cuid())
+  sessionId        String
+  session          Session   @relation(fields: [sessionId], references: [id])
+  studentId        String
+  student          Student   @relation(fields: [studentId], references: [id])
+  readSeconds      Int?
+  audioPlays       Int       @default(0)
+  totalSeconds     Int?
+  readingCorrect   Int?
+  readingTotal     Int?
+  listeningCorrect Int?
+  listeningTotal   Int?
+  submittedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  artifacts        Artifact[]
+  scores           Score[]
+  characterReading CharacterReading?
+  consultTickets   ConsultTicket[]
+  feedbacks        Feedback[]
+
+  @@unique([sessionId, studentId])
+}
+
+enum ArtifactKind {
+  TULISAN
+  GAMBAR
+}
+
+model Artifact {
+  id                 String       @id @default(cuid())
+  submissionId       String
+  submission         Submission   @relation(fields: [submissionId], references: [id])
+  kind               ArtifactKind @default(TULISAN)
+  originalPath       String
+  qualityFlags       String
+  accepted           Boolean
+  ruledLinesDetected Int
+  mmPerPx            Float?
+  calibrationMethod  String
+  createdAt          DateTime     @default(now())
+
+  featureSet FeatureSet?
+}
+
+enum ReadingStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model CharacterReading {
+  id                  String        @id @default(cuid())
+  submissionId        String        @unique
+  submission          Submission    @relation(fields: [submissionId], references: [id])
+  readerId            String
+  reader              StaffUser     @relation(fields: [readerId], references: [id])
+  status              ReadingStatus @default(DRAFT)
+  strengthsJson       String // daftar potensi positif: [{title, detail}]
+  learningSuggestions String
+  notes               String? // catatan pendamping, boleh memuat sisi yang perlu perhatian
+  publishedAt         DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+// Kesimpulan akhir karakter/potensi siswa, ditulis Guru BK setelah ketiga level
+// tes selesai dan tiap levelnya divalidasi. Rekap data mesin hanya alat bantu;
+// isi kesimpulan sepenuhnya keputusan manusia.
+model FinalConclusion {
+  id          String        @id @default(cuid())
+  studentId   String        @unique
+  student     Student       @relation(fields: [studentId], references: [id])
+  authorId    String
+  author      StaffUser     @relation(fields: [authorId], references: [id])
+  body        String
+  status      ReadingStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum TicketStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model ConsultTicket {
+  id           String       @id @default(cuid())
+  studentId    String
+  student      Student      @relation(fields: [studentId], references: [id])
+  submissionId String?
+  submission   Submission?  @relation(fields: [submissionId], references: [id])
+  subject      String
+  status       TicketStatus @default(OPEN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  messages ConsultMessage[]
+}
+
+enum SenderRole {
+  STUDENT
+  STAFF
+}
+
+model ConsultMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     ConsultTicket @relation(fields: [ticketId], references: [id])
+  senderRole SenderRole
+  senderId   String
+  body       String
+  createdAt  DateTime      @default(now())
+}
+
+model FeatureSet {
+  id               String   @id @default(cuid())
+  artifactId       String   @unique
+  artifact         Artifact @relation(fields: [artifactId], references: [id])
+  extractorVersion String
+  featuresJson     String
+  confidenceJson   String
+  createdAt        DateTime @default(now())
+}
+
+model Score {
+  id               String     @id @default(cuid())
+  submissionId     String
+  submission       Submission @relation(fields: [submissionId], references: [id])
+  rubricVersion    String
+  reading          Float?
+  listening        Float?
+  writingContent   Float?
+  writingQuality   Float?
+  aspectsJson      String
+  machineGenerated Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+
+  teacherReviews TeacherReview[]
+}
+
+model TeacherReview {
+  id           String    @id @default(cuid())
+  scoreId      String
+  score        Score     @relation(fields: [scoreId], references: [id])
+  reviewerId   String
+  reviewer     StaffUser @relation(fields: [reviewerId], references: [id])
+  aspect       String
+  machineValue Float
+  teacherValue Float
+  agree        Boolean
+  note         String?
+  reviewedAt   DateTime  @default(now())
+
+  @@unique([scoreId, aspect])
+}
+
+model ExerciseAssignment {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      Student        @relation(fields: [studentId], references: [id])
+  moduleId     String
+  module       ExerciseModule @relation(fields: [moduleId], references: [id])
+  reasonAspect String
+  assignedAt   DateTime       @default(now())
+  completedAt  DateTime?
+}
+
+enum IndicatorSource {
+  BASELINE_2026
+  MEASURED
+}
+
+model IndicatorSnapshot {
+  id            String          @id @default(cuid())
+  schoolId      String
+  school        School          @relation(fields: [schoolId], references: [id])
+  indicatorCode String
+  label         String
+  valuePct      Float
+  targetPct     Float?
+  sampleN       Int
+  source        IndicatorSource
+  capturedAt    DateTime        @default(now())
+}
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  userId    String?
+  user      StaffUser? @relation(fields: [userId], references: [id])
+  actorType String
+  action    String
+  entity    String
+  entityId  String?
+  ip        String?
+  createdAt DateTime   @default(now())
+}
+
+model ContactLead {
+  id          String   @id @default(cuid())
+  schoolName  String
+  contactName String
+  email       String
+  message     String
+  createdAt   DateTime @default(now())
+}
+
+// Penghitung kunjungan first-party. visitorId adalah cuid acak dari cookie
+// anonim (tanpa data pribadi apa pun); unique per hari = dedup harian.
+model PageVisit {
+  id        String   @id @default(cuid())
+  visitorId String
+  path      String
+  day       String
+  createdAt DateTime @default(now())
+
+  @@unique([visitorId, path, day])
+}
+
+enum FeedbackAwareness {
+  TAHU
+  PERNAH_DENGAR
+  TIDAK_TAHU
+}
+
+enum DisplayConsent {
+  DENGAN_NAMA
+  ANONIM
+  TIDAK
+}
+
+model Feedback {
+  id             String            @id @default(cuid())
+  studentId      String
+  student        Student           @relation(fields: [studentId], references: [id])
+  submissionId   String?
+  submission     Submission?       @relation(fields: [submissionId], references: [id])
+  awareness      FeedbackAwareness
+  clarityScore   Int // 1-5 "seberapa paham cara belajarmu setelah menerima hasil"
+  impression     String // kesan paling berkesan — kandidat tayang publik
+  suggestion     String? // saran perbaikan — internal saja, tidak pernah tayang
+  displayConsent DisplayConsent
+  approved       Boolean           @default(false) // moderasi koordinator sebelum tayang
+  createdAt      DateTime          @default(now())
+
+  @@unique([studentId, submissionId])
+}
+
+// ---------- Kokurikuler: soal + nilai + analisis kepribadian ----------
+// Subsistem terpisah dari Session/Submission literasi (yang terikat lembar
+// cetak & foto tulisan tangan) — kuis kokurikuler dikerjakan langsung di
+// browser. Nilai kokurikuler dihitung mesin dari kunci jawaban PG/Benar-Salah
+// + skor esai yang diisi guru (lihat src/lib/kokurikulerScore.ts). Analisis
+// kepribadian TIDAK pernah otomatis: mesin hanya menghitung tally pola jawaban
+// per dimensi (src/lib/kokurikulerPersonality.ts), simpulan naratifnya selalu
+// ditulis & dipublikasikan manusia (guru pembuat kuis / Guru BK), meniru alur
+// DRAFT/PUBLISHED CharacterReading persis.
+enum KokurikulerQuestionType {
+  PILIHAN_GANDA
+  BENAR_SALAH
+  URAIAN
+}
+
+model KokurikulerQuiz {
+  id          String        @id @default(cuid())
+  classId     String
+  class       Class         @relation(fields: [classId], references: [id])
+  createdById String
+  createdBy   StaffUser     @relation(fields: [createdById], references: [id])
+  label       String
+  tema        String?
+  opensAt     DateTime
+  closesAt    DateTime
+  status      SessionStatus @default(DRAFT) // DRAFT = disusun; OPEN = siswa bisa mengerjakan; CLOSED
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  questions        KokurikulerQuestion[]
+  attempts         KokurikulerAttempt[]
+  targetedStudents KokurikulerQuizStudent[]
+}
+
+// Bila kuis punya baris di sini, hanya siswa terdaftar yang melihat/mengerjakan;
+// tanpa baris = seluruh siswa di classId (identik semantik dengan SessionStudent).
+model KokurikulerQuizStudent {
+  id        String          @id @default(cuid())
+  quizId    String
+  quiz      KokurikulerQuiz @relation(fields: [quizId], references: [id])
+  studentId String
+  student   Student         @relation(fields: [studentId], references: [id])
+
+  @@unique([quizId, studentId])
+}
+
+model KokurikulerQuestion {
+  id                   String                  @id @default(cuid())
+  quizId               String
+  quiz                 KokurikulerQuiz         @relation(fields: [quizId], references: [id])
+  order                Int
+  type                 KokurikulerQuestionType
+  text                 String
+  optionsJson          String? // PILIHAN_GANDA saja: ["opsi A","opsi B","opsi C","opsi D"]
+  correctAnswer        String? // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: null (tak ada kunci otomatis)
+  personalityDimension String? // tag bebas dari guru, mis. "ketangguhan" — dipakai tally pola, opsional
+  createdAt            DateTime                @default(now())
+
+  answers KokurikulerAnswer[]
+}
+
+model KokurikulerAttempt {
+  id              String          @id @default(cuid())
+  quizId          String
+  quiz            KokurikulerQuiz @relation(fields: [quizId], references: [id])
+  studentId       String
+  student         Student         @relation(fields: [studentId], references: [id])
+  submittedAt     DateTime?
+  autoCorrect     Int? // jumlah benar PG+Benar-Salah, dihitung saat submit
+  autoTotal       Int? // jumlah soal PG+Benar-Salah
+  essayScore      Float? // 0-100, diisi guru setelah membaca jawaban uraian; null = belum dinilai
+  essayGradedById String?
+  essayGradedBy   StaffUser?      @relation("KokurikulerEssayGrader", fields: [essayGradedById], references: [id])
+  essayGradedAt   DateTime?
+  finalScore      Float? // nilai kokurikuler akhir 0-100 (lihat kokurikulerScore.ts); null = menunggu nilai esai
+  createdAt       DateTime        @default(now())
+
+  answers KokurikulerAnswer[]
+  reading KokurikulerReading?
+
+  @@unique([quizId, studentId])
+}
+
+model KokurikulerAnswer {
+  id         String              @id @default(cuid())
+  attemptId  String
+  attempt    KokurikulerAttempt  @relation(fields: [attemptId], references: [id])
+  questionId String
+  question   KokurikulerQuestion @relation(fields: [questionId], references: [id])
+  answerText String // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: teks bebas
+  isCorrect  Boolean? // null untuk URAIAN; dihitung saat submit utk PG/Benar-Salah
+
+  @@unique([attemptId, questionId])
+}
+
+// Kesimpulan analisis kepribadian per attempt, ditulis manusia (guru pembuat
+// kuis atau Guru BK) setelah membaca tally mekanis + jawaban uraian. Mirror
+// persis alur/DRAFT-PUBLISHED CharacterReading — draft tidak pernah tampil
+// ke siswa/koordinator, hanya ke penulis dan Guru BK/Admin.
+model KokurikulerReading {
+  id              String             @id @default(cuid())
+  attemptId       String             @unique
+  attempt         KokurikulerAttempt @relation(fields: [attemptId], references: [id])
+  readerId        String
+  reader          StaffUser          @relation("KokurikulerReader", fields: [readerId], references: [id])
+  status          ReadingStatus      @default(DRAFT)
+  indicationsJson String // [{dimension, title, detail}] — indikasi per dimensi kepribadian
+  narrative       String // simpulan naratif keseluruhan, wajib diisi sebelum publikasi
+  notes           String? // catatan internal, tidak pernah tampil ke siswa
+  publishedAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
