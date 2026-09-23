@@ -302,6 +302,14 @@ header.situs {
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* <summary> dipakai sebagai tombol buka/tutup — samakan dengan .btn, buang
+   segitiga bawaan browser (beda cara tiap browser, jadi dua aturan). */
+summary.btn {
+  list-style: none;
+}
+summary.btn::-webkit-details-marker {
+  display: none;
+}
 
 /* ---------- teks & bagian ---------- */
 .alis {
