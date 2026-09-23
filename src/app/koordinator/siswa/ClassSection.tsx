@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ConsentButtons } from "./ConsentButtons";
 import { ClassNameEditor } from "./ClassNameEditor";
 import { DeleteClassButton } from "./DeleteClassButton";
+import { ApproveAllButton } from "./ApproveAllButton";
 
 const CONSENT_LABEL: Record<string, { label: string; tone: string }> = {
   GRANTED: { label: "DISETUJUI", tone: "pill-ok" },
@@ -56,6 +57,7 @@ export function ClassSection({
             {pendingCount} MENUNGGU
           </span>
         )}
+        <ApproveAllButton classId={classId} pendingCount={pendingCount} />
         <ClassNameEditor classId={classId} name={name} />
         <DeleteClassButton classId={classId} name={name} studentCount={students.length} />
       </div>

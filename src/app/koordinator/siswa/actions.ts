@@ -46,6 +46,42 @@ export async function setConsent(studentId: string, granted: boolean, guardianNa
   revalidatePath("/koordinator/siswa");
 }
 
+/** Setujui sekaligus semua siswa berstatus PENDING di satu kelas — tidak
+ *  menyentuh yang sudah DICABUT (itu perlu keputusan sadar per siswa). */
+export async function approveAllPendingConsent(classId: string, guardianNote: string): Promise<number> {
+  const user = await requireCoordinator();
+
+  const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+  if (!targetClass || targetClass.schoolId !== user.schoolId) throw new Error("Kelas tidak ditemukan.");
+
+  const pendingStudents = await prisma.student.findMany({
+    where: { classId, schoolId: user.schoolId, consentStatus: "PENDING", archivedAt: null },
+    select: { id: true },
+  });
+  if (pendingStudents.length === 0) return 0;
+
+  const name = guardianNote.trim() || "Wali murid (disetujui massal)";
+  const grantedAt = new Date();
+
+  await prisma.$transaction([
+    prisma.student.updateMany({
+      where: { id: { in: pendingStudents.map((s) => s.id) } },
+      data: { consentStatus: "GRANTED" },
+    }),
+    prisma.consent.createMany({
+      data: pendingStudents.map((s) => ({
+        studentId: s.id,
+        guardianName: name,
+        status: "GRANTED" as const,
+        grantedAt,
+      })),
+    }),
+  ]);
+
+  revalidatePath("/koordinator/siswa");
+  return pendingStudents.length;
+}
+
 export interface AddClassState {
   error?: string;
   createdName?: string;
