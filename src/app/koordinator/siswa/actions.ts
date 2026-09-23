@@ -79,6 +79,45 @@ export async function addClass(_prev: AddClassState, formData: FormData): Promis
   return { createdName: created.name };
 }
 
+export async function renameClass(classId: string, newName: string): Promise<string> {
+  const user = await requireCoordinator();
+  const name = newName.trim();
+  if (!name) throw new Error("Nama kelas wajib diisi.");
+
+  const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+  if (!targetClass || targetClass.schoolId !== user.schoolId) throw new Error("Kelas tidak ditemukan.");
+
+  const duplicate = await prisma.class.findFirst({
+    where: { schoolId: user.schoolId, name, id: { not: classId } },
+  });
+  if (duplicate) throw new Error(`Kelas "${name}" sudah ada.`);
+
+  const updated = await prisma.class.update({ where: { id: classId }, data: { name } });
+  revalidatePath("/koordinator/siswa");
+  return updated.name;
+}
+
+export async function deleteClass(classId: string) {
+  const user = await requireCoordinator();
+
+  const targetClass = await prisma.class.findUnique({
+    where: { id: classId },
+    include: { _count: { select: { students: true } } },
+  });
+  if (!targetClass || targetClass.schoolId !== user.schoolId) throw new Error("Kelas tidak ditemukan.");
+  if (targetClass._count.students > 0) {
+    throw new Error("Kelas masih punya siswa — pindahkan atau hapus siswanya dulu sebelum menghapus kelas.");
+  }
+
+  try {
+    await prisma.class.delete({ where: { id: classId } });
+  } catch {
+    throw new Error("Kelas tidak bisa dihapus karena masih punya sesi/kuis yang terkait dengannya.");
+  }
+
+  revalidatePath("/koordinator/siswa");
+}
+
 export interface ImportState {
   error?: string;
   createdCount?: number;

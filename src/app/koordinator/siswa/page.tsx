@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { ConsentButtons } from "./ConsentButtons";
 import { ImportForm } from "./ImportForm";
 import { AddClassForm } from "./AddClassForm";
+import { ClassNameEditor } from "./ClassNameEditor";
+import { DeleteClassButton } from "./DeleteClassButton";
 
 const CONSENT_LABEL: Record<string, { label: string; tone: string }> = {
   GRANTED: { label: "DISETUJUI", tone: "pill-ok" },
@@ -28,9 +30,13 @@ export default async function SiswaPage() {
 
       {classes.map((c) => (
         <div key={c.id} style={{ marginBottom: 28 }}>
-          <p className="tbl-k">
-            {c.name.toUpperCase()} · {c.students.length} SISWA
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <p className="tbl-k" style={{ margin: 0 }}>
+              {c.name.toUpperCase()} · {c.students.length} SISWA
+            </p>
+            <ClassNameEditor classId={c.id} name={c.name} />
+            <DeleteClassButton classId={c.id} name={c.name} studentCount={c.students.length} />
+          </div>
           {c.students.map((s) => {
             const consent = CONSENT_LABEL[s.consentStatus];
             return (
