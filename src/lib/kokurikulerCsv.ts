@@ -77,15 +77,34 @@ export interface ParseKokurikulerCsvResult {
   errors: CsvRowError[];
 }
 
-const QUESTION_TYPES: KokurikulerQuestionType[] = ["PILIHAN_GANDA", "BENAR_SALAH", "URAIAN"];
 const OPTION_KEYS = ["opsi_a", "opsi_b", "opsi_c", "opsi_d"] as const;
 const OPTION_LETTERS = ["A", "B", "C", "D"];
+
+// Guru menulis dengan bahasa wajar ("Pilihan Ganda", "Benar-Salah", "Esai"),
+// bukan persis nama enum ("PILIHAN_GANDA") — terima variasi umum ini selain
+// bentuk baku. slugify menyamakan spasi/tanda pisah jadi satu format sebelum
+// dicocokkan, supaya "Tipe Soal", "tipe-soal", dst juga cocok ke "tipe_soal".
+function slugify(s: string): string {
+  return s.trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+const TYPE_ALIASES: Record<string, KokurikulerQuestionType> = {
+  PILIHAN_GANDA: "PILIHAN_GANDA",
+  PG: "PILIHAN_GANDA",
+  BENAR_SALAH: "BENAR_SALAH",
+  BS: "BENAR_SALAH",
+  B_S: "BENAR_SALAH",
+  URAIAN: "URAIAN",
+  ESAI: "URAIAN",
+  ESSAY: "URAIAN",
+};
 
 export function parseKokurikulerQuestionsCsv(csvText: string): ParseKokurikulerCsvResult {
   const parsed = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
+    // "Tipe Soal"/"tipe-soal" dsb juga harus cocok ke kunci "tipe_soal".
+    transformHeader: (h) => slugify(h).toLowerCase(),
   });
 
   const errors: CsvRowError[] = [];
@@ -93,8 +112,7 @@ export function parseKokurikulerQuestionsCsv(csvText: string): ParseKokurikulerC
 
   parsed.data.forEach((raw, index) => {
     const rowNumber = index + 1;
-    const typeRaw = (raw.tipe_soal ?? "").trim().toUpperCase();
-    const type = QUESTION_TYPES.find((t) => t === typeRaw);
+    const type = TYPE_ALIASES[slugify(raw.tipe_soal ?? "")];
     if (!type) {
       errors.push({
         rowNumber,
