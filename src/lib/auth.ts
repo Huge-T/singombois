@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { clearFailedAttempts, isLocked, registerFailedAttempt } from "@/lib/loginLockout";
 
 export type AppRole = "STUDENT" | "TEACHER" | "GURU_BK" | "COORDINATOR" | "ADMIN" | "SUPER_ADMIN";
 
@@ -50,9 +51,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const student = await prisma.student.findUnique({ where: { nisn } });
         if (!student || student.archivedAt) return null;
+        if (isLocked(student.lockedUntil)) return null;
 
         const ok = await bcrypt.compare(pin, student.pinHash);
-        if (!ok) return null;
+        if (!ok) {
+          await registerFailedAttempt("student", student.id, student.failedLoginAttempts);
+          return null;
+        }
+        await clearFailedAttempts("student", student.id);
 
         return {
           id: student.id,
@@ -77,9 +83,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const staff = await prisma.staffUser.findUnique({ where: { email } });
         if (!staff) return null;
+        if (isLocked(staff.lockedUntil)) return null;
 
         const ok = await bcrypt.compare(password, staff.passwordHash);
-        if (!ok) return null;
+        if (!ok) {
+          await registerFailedAttempt("staffUser", staff.id, staff.failedLoginAttempts);
+          return null;
+        }
+        await clearFailedAttempts("staffUser", staff.id);
 
         return {
           id: staff.id,

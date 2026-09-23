@@ -88,7 +88,9 @@ export async function addAudioMaterial(_prev: MateriFormState, formData: FormDat
 }
 
 export async function toggleAudioQc(audioId: string, pass: boolean) {
-  await requireCoordinator();
+  const user = await requireCoordinator();
+  const audio = await prisma.audioMaterial.findUnique({ where: { id: audioId } });
+  if (!audio || audio.schoolId !== user.schoolId) throw new Error("Materi audio tidak ditemukan");
   await prisma.audioMaterial.update({
     where: { id: audioId },
     data: {

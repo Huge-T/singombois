@@ -24,6 +24,14 @@ export async function saveReading(
   assertBk(session?.user.role);
   const readerId = session!.user.id;
 
+  const submission = await prisma.submission.findUnique({
+    where: { id: submissionId },
+    include: { student: true },
+  });
+  if (!submission || submission.student.schoolId !== session!.user.schoolId) {
+    throw new Error("Submission tidak ditemukan");
+  }
+
   const strengths = data.strengths.filter((s) => s.title.trim() || s.detail.trim());
 
   const reading = await prisma.characterReading.upsert({

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import Papa from "papaparse";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { deleteStudentArtifacts } from "@/lib/consent";
 import { prisma } from "@/lib/prisma";
 
 async function requireCoordinator() {
@@ -18,8 +19,17 @@ async function requireCoordinator() {
 }
 
 export async function setConsent(studentId: string, granted: boolean, guardianName: string) {
-  await requireCoordinator();
+  const user = await requireCoordinator();
   const status = granted ? "GRANTED" : "REVOKED";
+
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student || student.schoolId !== user.schoolId) throw new Error("Siswa tidak ditemukan");
+
+  // PRIV-2: mencabut lewat koordinator harus punya efek sama dengan siswa
+  // mencabut sendiri — hapus artefak fisik, bukan cuma ubah status.
+  if (!granted) {
+    await deleteStudentArtifacts(studentId);
+  }
 
   await prisma.$transaction([
     prisma.student.update({ where: { id: studentId }, data: { consentStatus: status } }),
@@ -106,6 +116,9 @@ export async function importStudentsCsv(_prev: ImportState, formData: FormData):
 
   if (!classId) return { error: "Pilih kelas tujuan." };
   if (!(file instanceof File) || file.size === 0) return { error: "Pilih berkas CSV (kolom: nama, nisn)." };
+
+  const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+  if (!targetClass || targetClass.schoolId !== user.schoolId) return { error: "Kelas tujuan tidak ditemukan." };
 
   const text = await file.text();
   const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true });

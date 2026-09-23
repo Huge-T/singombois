@@ -75,14 +75,16 @@ model Class {
 }
 
 model StaffUser {
-  id           String    @id @default(cuid())
-  schoolId     String
-  school       School    @relation(fields: [schoolId], references: [id])
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         StaffRole
-  createdAt    DateTime  @default(now())
+  id                  String    @id @default(cuid())
+  schoolId            String
+  school              School    @relation(fields: [schoolId], references: [id])
+  name                String
+  email               String    @unique
+  passwordHash        String
+  role                StaffRole
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime  @default(now())
 
   homeroomClasses   Class[]
   sessionsCreated   Session[]
@@ -97,17 +99,19 @@ model StaffUser {
 }
 
 model Student {
-  id            String        @id @default(cuid())
-  schoolId      String
-  school        School        @relation(fields: [schoolId], references: [id])
-  classId       String
-  class         Class         @relation(fields: [classId], references: [id])
-  name          String
-  nisn          String        @unique
-  pinHash       String
-  consentStatus ConsentStatus @default(PENDING)
-  archivedAt    DateTime?
-  createdAt     DateTime      @default(now())
+  id                  String        @id @default(cuid())
+  schoolId            String
+  school              School        @relation(fields: [schoolId], references: [id])
+  classId             String
+  class               Class         @relation(fields: [classId], references: [id])
+  name                String
+  nisn                String        @unique
+  pinHash             String
+  consentStatus       ConsentStatus @default(PENDING)
+  failedLoginAttempts Int           @default(0)
+  lockedUntil         DateTime?
+  archivedAt          DateTime?
+  createdAt           DateTime      @default(now())
 
   consents            Consent[]
   submissions         Submission[]

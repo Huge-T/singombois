@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const ACTION_LABEL: Record<string, string> = {
@@ -17,7 +18,19 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export default async function LogAksesPage() {
+  const session = await auth();
+  const schoolId = session!.user.schoolId;
+
+  // AuditLog lintas aktor (staf & siswa) tidak punya schoolId langsung —
+  // batasi ke staf sekolah ini, atau aksi berentitas Student milik sekolah ini
+  // (mis. REVOKE_CONSENT_DELETE_ARTIFACTS yang dipicu siswa sendiri).
+  const schoolStudents = await prisma.student.findMany({ where: { schoolId }, select: { id: true } });
+  const schoolStudentIds = schoolStudents.map((s) => s.id);
+
   const logs = await prisma.auditLog.findMany({
+    where: {
+      OR: [{ user: { schoolId } }, { entity: "Student", entityId: { in: schoolStudentIds } }],
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
     include: { user: true },

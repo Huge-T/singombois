@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PrintButton } from "./PrintButton";
@@ -8,12 +9,17 @@ const MARGIN_COLOR = "#E8B4A8";
 
 export default async function CetakLembarKerjaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
 
   const literacySession = await prisma.session.findUnique({
     where: { id },
     include: { class: true, worksheetTemplate: true, storyPrompt: true, targetedStudents: true },
   });
-  if (!literacySession) notFound();
+  const isOwner =
+    literacySession?.createdById === session!.user.id ||
+    session!.user.role === "ADMIN" ||
+    session!.user.role === "SUPER_ADMIN";
+  if (!literacySession || !isOwner) notFound();
 
   // Sesi tertarget (screening individual): cetak hanya untuk siswa terpilih.
   const targetIds = literacySession.targetedStudents.map((t) => t.studentId);

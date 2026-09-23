@@ -10,9 +10,11 @@ export default async function IndikatorPage() {
   const baselineOnlyRows = BASELINE_INDICATORS.filter((i) => !(MEASURABLE_CODES as readonly string[]).includes(i.code));
 
   const deltas = measuredRows
-    .map((i) => live[i.code]?.value)
-    .filter((v): v is number => v != null)
-    .map((v, idx) => v - measuredRows[idx].value);
+    .map((i) => {
+      const liveValue = live[i.code]?.value;
+      return liveValue != null ? liveValue - i.value : null;
+    })
+    .filter((v): v is number => v != null);
   const avgDelta = deltas.length ? deltas.reduce((a, b) => a + b, 0) / deltas.length : null;
 
   return (

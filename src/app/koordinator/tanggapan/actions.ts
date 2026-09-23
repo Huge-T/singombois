@@ -14,8 +14,10 @@ export async function setFeedbackApproved(feedbackId: string, approved: boolean)
   const session = await auth();
   assertCoordinator(session?.user.role);
 
-  const feedback = await prisma.feedback.findUnique({ where: { id: feedbackId } });
-  if (!feedback) throw new Error("Tanggapan tidak ditemukan");
+  const feedback = await prisma.feedback.findUnique({ where: { id: feedbackId }, include: { student: true } });
+  if (!feedback || feedback.student.schoolId !== session!.user.schoolId) {
+    throw new Error("Tanggapan tidak ditemukan");
+  }
 
   // Persetujuan siswa adalah batas keras: tanpa izin tampil, koordinator
   // tidak bisa menayangkannya, titik.

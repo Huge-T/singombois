@@ -36,6 +36,13 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
     );
   }
 
+  // Cegah unggah ganda (klik dobel, tombol back, atau panggilan API langsung)
+  // menumpuk Artifact/Score baru untuk submission yang sudah selesai —
+  // review guru yang sudah terikat ke skor lama jadi terputus dari tampilan.
+  if (submission.submittedAt) {
+    return NextResponse.json({ error: "Lembar kerja untuk sesi ini sudah dikumpulkan." }, { status: 409 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file");
   const kind = formData.get("kind") === "GAMBAR" ? "GAMBAR" : "TULISAN";
@@ -51,7 +58,21 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const gate = await runQualityGate(buffer);
+  // sharp() melempar exception untuk foto rusak/format yang gagal didekode
+  // server (mis. HEIC tanpa libheif) — tanpa try/catch ini jadi 500 non-JSON
+  // yang bikin client macet menunggu res.json() selamanya (lihat SessionRunner).
+  let gate: Awaited<ReturnType<typeof runQualityGate>>;
+  try {
+    gate = await runQualityGate(buffer);
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Foto tidak dapat dibaca (mungkin rusak atau format tidak didukung). Coba foto ulang dengan format JPG atau PNG.",
+      },
+      { status: 422 }
+    );
+  }
 
   const publicPath = await saveUploadedFile(
     `uploads/${submissionId}/${Date.now()}.jpg`,
@@ -93,10 +114,23 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
     return NextResponse.json({ accepted: true, kind: "GAMBAR" });
   }
 
-  const { calibration, features, rejected } = await extractFeatures(buffer, {
-    lineHeightMm: submission.session.worksheetTemplate.lineHeightMm,
-    minWords: submission.session.worksheetTemplate.minWords,
-  });
+  let calibration: Awaited<ReturnType<typeof extractFeatures>>["calibration"];
+  let features: Awaited<ReturnType<typeof extractFeatures>>["features"];
+  let rejected: Awaited<ReturnType<typeof extractFeatures>>["rejected"];
+  try {
+    ({ calibration, features, rejected } = await extractFeatures(buffer, {
+      lineHeightMm: submission.session.worksheetTemplate.lineHeightMm,
+      minWords: submission.session.worksheetTemplate.minWords,
+    }));
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Foto lolos pengecekan awal tapi gagal dianalisis lebih lanjut. Coba foto ulang dengan pencahayaan lebih rata.",
+      },
+      { status: 422 }
+    );
+  }
 
   const artifact = await prisma.artifact.create({
     data: {

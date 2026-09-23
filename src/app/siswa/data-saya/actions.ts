@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { deleteUploadedFile } from "@/lib/storage";
+import { deleteStudentArtifacts } from "@/lib/consent";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -18,19 +18,9 @@ export async function revokeConsentAndDeleteArtifacts() {
 
   const studentId = session.user.id;
 
-  const artifacts = await prisma.artifact.findMany({
-    where: { submission: { studentId } },
-  });
-
-  for (const artifact of artifacts) {
-    await deleteUploadedFile(artifact.originalPath);
-  }
+  await deleteStudentArtifacts(studentId);
 
   await prisma.$transaction([
-    prisma.teacherReview.deleteMany({ where: { score: { submission: { studentId } } } }),
-    prisma.score.deleteMany({ where: { submission: { studentId } } }),
-    prisma.featureSet.deleteMany({ where: { artifact: { submission: { studentId } } } }),
-    prisma.artifact.deleteMany({ where: { submission: { studentId } } }),
     prisma.student.update({ where: { id: studentId }, data: { consentStatus: "REVOKED" } }),
     prisma.consent.updateMany({
       where: { studentId },

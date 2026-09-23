@@ -258,19 +258,26 @@ export function SessionRunner({
     if (!file) return;
     setUploading(true);
     setUploadError(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("kind", kind);
-    const res = await fetch(`/api/upload/${submissionId}`, { method: "POST", body: fd });
-    const data = await res.json();
-    setUploading(false);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("kind", kind);
+      const res = await fetch(`/api/upload/${submissionId}`, { method: "POST", body: fd });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setUploadError(data.flags ?? data.error ?? "Gagal mengunggah");
-      return;
+      if (!res.ok) {
+        setUploadError(data.flags ?? data.error ?? "Gagal mengunggah");
+        return;
+      }
+      setUploadOk(true);
+      setTimeout(() => router.push(`${window.location.pathname}/hasil`), 400);
+    } catch {
+      // Respons gagal diparse (server error tak terduga/koneksi putus) — jangan
+      // biarkan tombol macet permanen di "Menganalisis...".
+      setUploadError("Terjadi kesalahan tak terduga. Coba unggah ulang.");
+    } finally {
+      setUploading(false);
     }
-    setUploadOk(true);
-    setTimeout(() => router.push(`${window.location.pathname}/hasil`), 400);
   }
 
   const infoLembarKerja = (

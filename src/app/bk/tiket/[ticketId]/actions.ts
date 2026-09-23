@@ -15,8 +15,8 @@ export async function replyTicket(ticketId: string, body: string) {
   assertBk(session?.user.role);
   if (!body.trim()) return;
 
-  const ticket = await prisma.consultTicket.findUnique({ where: { id: ticketId } });
-  if (!ticket) throw new Error("Tiket tidak ditemukan");
+  const ticket = await prisma.consultTicket.findUnique({ where: { id: ticketId }, include: { student: true } });
+  if (!ticket || ticket.student.schoolId !== session!.user.schoolId) throw new Error("Tiket tidak ditemukan");
 
   await prisma.$transaction([
     prisma.consultMessage.create({
@@ -43,6 +43,9 @@ export async function replyTicket(ticketId: string, body: string) {
 export async function closeTicket(ticketId: string) {
   const session = await auth();
   assertBk(session?.user.role);
+
+  const ticket = await prisma.consultTicket.findUnique({ where: { id: ticketId }, include: { student: true } });
+  if (!ticket || ticket.student.schoolId !== session!.user.schoolId) throw new Error("Tiket tidak ditemukan");
 
   await prisma.consultTicket.update({ where: { id: ticketId }, data: { status: "CLOSED" } });
 
