@@ -10,6 +10,24 @@ export const runtime = "nodejs";
 const MAX_BYTES = 10 * 1024 * 1024; // UP-1: max 10MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/heic", "image/heif"];
 
+// file.type dikirim client, mudah dipalsukan — cek magic bytes betulan
+// sebagai lapisan tambahan sebelum buffer diproses lebih jauh.
+function looksLikeAcceptedImage(buffer: Buffer, mimeType: string): boolean {
+  if (buffer.length < 12) return false;
+  if (mimeType === "image/jpeg") {
+    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (mimeType === "image/png") {
+    const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return sig.every((b, i) => buffer[i] === b);
+  }
+  if (mimeType === "image/heic" || mimeType === "image/heif") {
+    // ISO base media file format (HEIC/HEIF/MP4-family): byte 4-7 = "ftyp".
+    return buffer.subarray(4, 8).toString("ascii") === "ftyp";
+  }
+  return false;
+}
+
 export async function POST(req: NextRequest, ctx: { params: Promise<{ submissionId: string }> }) {
   const { submissionId } = await ctx.params;
   const session = await auth();
@@ -57,6 +75,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!looksLikeAcceptedImage(buffer, file.type)) {
+    return NextResponse.json({ error: "Berkas bukan gambar yang valid untuk format yang dipilih." }, { status: 400 });
+  }
 
   // sharp() melempar exception untuk foto rusak/format yang gagal didekode
   // server (mis. HEIC tanpa libheif) — tanpa try/catch ini jadi 500 non-JSON

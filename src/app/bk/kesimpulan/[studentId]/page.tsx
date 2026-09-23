@@ -119,6 +119,7 @@ export default async function KesimpulanPage({ params }: { params: Promise<{ stu
           initialBody={student.finalConclusion?.body ?? ""}
           status={student.finalConclusion?.status ?? null}
           canPublish={canPublish}
+          initialUpdatedAt={student.finalConclusion?.updatedAt.toISOString() ?? null}
         />
       </div>
     </div>

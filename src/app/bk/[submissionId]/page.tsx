@@ -125,6 +125,7 @@ export default async function BkReadingPage({ params }: { params: Promise<{ subm
           initialLearningSuggestions={reading?.learningSuggestions ?? ""}
           initialNotes={reading?.notes ?? ""}
           initialStatus={reading?.status ?? null}
+          initialUpdatedAt={reading?.updatedAt.toISOString() ?? null}
         />
       </div>
     </div>

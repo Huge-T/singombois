@@ -10,12 +10,14 @@ export function ReadingForm({
   initialLearningSuggestions,
   initialNotes,
   initialStatus,
+  initialUpdatedAt,
 }: {
   submissionId: string;
   initialStrengths: StrengthItem[];
   initialLearningSuggestions: string;
   initialNotes: string;
   initialStatus: "DRAFT" | "PUBLISHED" | null;
+  initialUpdatedAt: string | null;
 }) {
   const [strengths, setStrengths] = useState<StrengthItem[]>(
     initialStrengths.length > 0 ? initialStrengths : [{ title: "", detail: "" }]
@@ -23,6 +25,8 @@ export function ReadingForm({
   const [learningSuggestions, setLearningSuggestions] = useState(initialLearningSuggestions);
   const [notes, setNotes] = useState(initialNotes);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -40,15 +44,22 @@ export function ReadingForm({
 
   function submit(publish: boolean) {
     setSaved(false);
+    setError(null);
     startTransition(async () => {
-      await saveReading(submissionId, { strengths, learningSuggestions, notes }, publish);
-      setSaved(true);
-      if (publish) router.push("/bk");
+      try {
+        const result = await saveReading(submissionId, { strengths, learningSuggestions, notes }, publish, updatedAt);
+        setUpdatedAt(result.updatedAt);
+        setSaved(true);
+        if (publish) router.push("/bk");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Gagal menyimpan");
+      }
     });
   }
 
   return (
     <div className="card">
+      {error && <div className="error-box">{error}</div>}
       <p className="tbl-k">POTENSI POSITIF</p>
       {strengths.map((s, i) => (
         <div className="rev-item" key={i}>

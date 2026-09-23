@@ -39,6 +39,9 @@ export async function uploadKokurikulerQuestionsCsv(
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Pilih berkas CSV template soal kokurikuler." };
   }
+  if (file.size > 2 * 1024 * 1024) {
+    return { error: "Berkas CSV lebih dari 2MB." };
+  }
 
   const text = await file.text();
   const { rows, errors } = parseKokurikulerQuestionsCsv(text);

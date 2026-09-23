@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ConflictError } from "@/lib/optimisticLock";
 
 function assertBk(role: string | undefined) {
   if (role !== "GURU_BK" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
@@ -18,7 +19,8 @@ export interface StrengthItem {
 export async function saveReading(
   submissionId: string,
   data: { strengths: StrengthItem[]; learningSuggestions: string; notes: string },
-  publish: boolean
+  publish: boolean,
+  expectedUpdatedAt: string | null
 ) {
   const session = await auth();
   assertBk(session?.user.role);
@@ -33,27 +35,38 @@ export async function saveReading(
   }
 
   const strengths = data.strengths.filter((s) => s.title.trim() || s.detail.trim());
+  const payload = {
+    readerId,
+    strengthsJson: JSON.stringify(strengths),
+    learningSuggestions: data.learningSuggestions,
+    notes: data.notes || null,
+    status: publish ? ("PUBLISHED" as const) : ("DRAFT" as const),
+    publishedAt: publish ? new Date() : undefined,
+  };
 
-  const reading = await prisma.characterReading.upsert({
-    where: { submissionId },
-    update: {
-      readerId,
-      strengthsJson: JSON.stringify(strengths),
-      learningSuggestions: data.learningSuggestions,
-      notes: data.notes || null,
-      status: publish ? "PUBLISHED" : "DRAFT",
-      publishedAt: publish ? new Date() : undefined,
-    },
-    create: {
-      submissionId,
-      readerId,
-      strengthsJson: JSON.stringify(strengths),
-      learningSuggestions: data.learningSuggestions,
-      notes: data.notes || null,
-      status: publish ? "PUBLISHED" : "DRAFT",
-      publishedAt: publish ? new Date() : null,
-    },
-  });
+  // Optimistic locking: cegah dua Guru BK saling menimpa draf tanpa sadar.
+  let readingId: string;
+  let newUpdatedAt: Date;
+  if (expectedUpdatedAt === null) {
+    try {
+      const created = await prisma.characterReading.create({
+        data: { submissionId, ...payload, publishedAt: publish ? new Date() : null },
+      });
+      readingId = created.id;
+      newUpdatedAt = created.updatedAt;
+    } catch {
+      throw new ConflictError();
+    }
+  } else {
+    const result = await prisma.characterReading.updateMany({
+      where: { submissionId, updatedAt: new Date(expectedUpdatedAt) },
+      data: payload,
+    });
+    if (result.count === 0) throw new ConflictError();
+    const updated = await prisma.characterReading.findUniqueOrThrow({ where: { submissionId } });
+    readingId = updated.id;
+    newUpdatedAt = updated.updatedAt;
+  }
 
   await prisma.auditLog.create({
     data: {
@@ -61,7 +74,7 @@ export async function saveReading(
       actorType: "staff",
       action: publish ? "PUBLISH_CHARACTER_READING" : "DRAFT_CHARACTER_READING",
       entity: "CharacterReading",
-      entityId: reading.id,
+      entityId: readingId,
     },
   });
 
@@ -71,4 +84,6 @@ export async function saveReading(
     const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
     if (submission) revalidatePath(`/siswa/sesi/${submission.sessionId}/hasil`);
   }
+
+  return { updatedAt: newUpdatedAt.toISOString() };
 }

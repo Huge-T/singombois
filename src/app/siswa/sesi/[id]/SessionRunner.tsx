@@ -236,12 +236,38 @@ export function SessionRunner({
     nextStep();
   }
 
+  // Cegah "dengar ulang tanpa batas" lewat geser slider mundur selagi audio
+  // masih berjalan (jatah putar cuma bertambah lewat event "play" — kalau
+  // audio tidak pernah berhenti, penghitung tidak pernah naik lagi). Geser
+  // slider selagi audio berhenti tetap diizinkan (mis. reset ke awal sebelum
+  // menekan putar untuk jatah berikutnya).
+  const audioIsPlayingRef = useRef(false);
+  const listeningMaxTimeRef = useRef(0);
+
+  function handleAudioTimeUpdate() {
+    if (audioRef.current && audioRef.current.currentTime > listeningMaxTimeRef.current) {
+      listeningMaxTimeRef.current = audioRef.current.currentTime;
+    }
+  }
+
+  function handleAudioSeeking() {
+    if (!audioIsPlayingRef.current || !audioRef.current) return;
+    if (audioRef.current.currentTime < listeningMaxTimeRef.current - 0.5) {
+      audioRef.current.currentTime = listeningMaxTimeRef.current;
+    }
+  }
+
+  function handleAudioPause() {
+    audioIsPlayingRef.current = false;
+  }
+
   function handleAudioPlay() {
     if (!listening) return;
     if (audioPlays >= listening.maxPlays) {
       audioRef.current?.pause();
       return;
     }
+    audioIsPlayingRef.current = true;
     setAudioPlays((p) => p + 1);
   }
 
@@ -418,6 +444,9 @@ export function SessionRunner({
               controls
               src={listening.fileUrl}
               onPlay={handleAudioPlay}
+              onPause={handleAudioPause}
+              onTimeUpdate={handleAudioTimeUpdate}
+              onSeeking={handleAudioSeeking}
               style={{ width: "100%", marginBottom: 20 }}
             />
           ) : (

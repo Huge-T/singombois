@@ -43,12 +43,18 @@ export async function recordReading(submissionId: string, readSeconds: number, a
   return { correct, total };
 }
 
+// Harus sama dengan maxPlays yang dikirim ke SessionRunner (page.tsx) — nilai
+// dari klien tidak dipercaya mentah-mentah, cuma dipakai sebagai telemetri
+// yang dibatasi ulang di sini.
+const LISTENING_MAX_PLAYS = 2;
+
 export async function recordListening(submissionId: string, audioPlays: number, answers: number[]) {
   const submission = await requireOwnSubmission(submissionId);
   const { correct, total } = gradeQuiz(submission.session.audioMaterial?.quizJson ?? null, answers);
+  const clampedAudioPlays = Math.max(0, Math.min(audioPlays, LISTENING_MAX_PLAYS));
   await prisma.submission.update({
     where: { id: submissionId },
-    data: { audioPlays, listeningCorrect: correct, listeningTotal: total },
+    data: { audioPlays: clampedAudioPlays, listeningCorrect: correct, listeningTotal: total },
   });
   return { correct, total };
 }

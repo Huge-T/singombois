@@ -87,6 +87,8 @@ export interface ImportState {
   duplicateCount?: number;
 }
 
+const MAX_CSV_BYTES = 2 * 1024 * 1024; // 2MB, jauh lebih dari cukup untuk ribuan baris siswa
+
 // Nama kolom diterima dalam beberapa varian umum (huruf besar/kecil, spasi,
 // atau ekspor Excel/Sheets yang menamai kolom sedikit berbeda) — supaya
 // koordinator tidak perlu menyesuaikan CSV mereka persis ke satu nama kolom.
@@ -116,6 +118,7 @@ export async function importStudentsCsv(_prev: ImportState, formData: FormData):
 
   if (!classId) return { error: "Pilih kelas tujuan." };
   if (!(file instanceof File) || file.size === 0) return { error: "Pilih berkas CSV (kolom: nama, nisn)." };
+  if (file.size > MAX_CSV_BYTES) return { error: "Berkas CSV lebih dari 2MB." };
 
   const targetClass = await prisma.class.findUnique({ where: { id: classId } });
   if (!targetClass || targetClass.schoolId !== user.schoolId) return { error: "Kelas tujuan tidak ditemukan." };

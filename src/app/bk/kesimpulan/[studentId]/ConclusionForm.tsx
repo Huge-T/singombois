@@ -9,15 +9,18 @@ export function ConclusionForm({
   initialBody,
   status,
   canPublish,
+  initialUpdatedAt,
 }: {
   studentId: string;
   initialBody: string;
   status: "DRAFT" | "PUBLISHED" | null;
   canPublish: boolean;
+  initialUpdatedAt: string | null;
 }) {
   const [body, setBody] = useState(initialBody);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -26,7 +29,8 @@ export function ConclusionForm({
     setSaved(false);
     startTransition(async () => {
       try {
-        await saveConclusion(studentId, body, publish);
+        const result = await saveConclusion(studentId, body, publish, updatedAt);
+        setUpdatedAt(result.updatedAt);
         setSaved(true);
         router.refresh();
       } catch (e) {
