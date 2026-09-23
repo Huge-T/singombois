@@ -13,7 +13,15 @@ export function ImportForm({ classes }: { classes: { id: string; label: string }
       {state.error && <div className="error-box">{state.error}</div>}
       {state.createdCount !== undefined && (
         <div className="notice-box">
-          {state.createdCount} siswa ditambahkan, {state.skippedCount} dilewati (NISN kosong/duplikat).
+          {state.createdCount} siswa ditambahkan
+          {state.skippedCount ? (
+            <>
+              , {state.skippedCount} dilewati ({state.emptyCount} nama/NISN kosong, {state.duplicateCount} NISN
+              sudah terdaftar).
+            </>
+          ) : (
+            "."
+          )}
         </div>
       )}
       <div className="field">

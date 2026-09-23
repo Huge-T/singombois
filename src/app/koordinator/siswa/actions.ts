@@ -73,6 +73,30 @@ export interface ImportState {
   error?: string;
   createdCount?: number;
   skippedCount?: number;
+  emptyCount?: number;
+  duplicateCount?: number;
+}
+
+// Nama kolom diterima dalam beberapa varian umum (huruf besar/kecil, spasi,
+// atau ekspor Excel/Sheets yang menamai kolom sedikit berbeda) — supaya
+// koordinator tidak perlu menyesuaikan CSV mereka persis ke satu nama kolom.
+const NAME_HEADER_ALIASES = ["nama", "name", "nama siswa", "nama lengkap"];
+const NISN_HEADER_ALIASES = ["nisn", "no nisn", "no. nisn", "no induk siswa nasional"];
+
+function normalizeHeader(h: string): string {
+  // Excel/Google Sheets sering menyisipkan BOM (﻿) di kolom pertama saat
+  // ekspor CSV UTF-8 — tanpa dibersihkan, kolom pertama gagal cocok sama sekali.
+  return h.replace(/^﻿/, "").trim().toLowerCase();
+}
+
+function pickField(row: Record<string, string>, aliases: string[]): string {
+  for (const key of Object.keys(row)) {
+    if (aliases.includes(normalizeHeader(key))) {
+      const value = (row[key] ?? "").trim();
+      if (value) return value;
+    }
+  }
+  return "";
 }
 
 export async function importStudentsCsv(_prev: ImportState, formData: FormData): Promise<ImportState> {
@@ -88,20 +112,24 @@ export async function importStudentsCsv(_prev: ImportState, formData: FormData):
   if (parsed.errors.length > 0) {
     return { error: `CSV tidak valid: ${parsed.errors[0].message}` };
   }
+  if (parsed.data.length === 0) {
+    return { error: "Berkas CSV tidak berisi baris data." };
+  }
 
   let created = 0;
-  let skipped = 0;
+  let emptyCount = 0;
+  let duplicateCount = 0;
 
   for (const row of parsed.data) {
-    const name = (row.nama || row.name || "").trim();
-    const nisn = (row.nisn || row.NISN || "").trim();
+    const name = pickField(row, NAME_HEADER_ALIASES);
+    const nisn = pickField(row, NISN_HEADER_ALIASES);
     if (!name || !nisn) {
-      skipped++;
+      emptyCount++;
       continue;
     }
     const exists = await prisma.student.findUnique({ where: { nisn } });
     if (exists) {
-      skipped++;
+      duplicateCount++;
       continue;
     }
     await prisma.student.create({
@@ -117,6 +145,16 @@ export async function importStudentsCsv(_prev: ImportState, formData: FormData):
     created++;
   }
 
+  // Semua baris kosong & tidak ada yang duplikat = hampir pasti nama kolom
+  // di CSV tidak cocok, bukan datanya yang salah. Tunjukkan kolom yang
+  // terdeteksi supaya koordinator bisa langsung membetulkan headernya.
+  if (created === 0 && duplicateCount === 0 && emptyCount === parsed.data.length) {
+    const detectedHeaders = Object.keys(parsed.data[0]).join(", ");
+    return {
+      error: `Semua ${emptyCount} baris dilewati karena kolom "nama"/"nisn" tidak ditemukan. Kolom yang terbaca dari berkas: ${detectedHeaders}. Pastikan baris pertama CSV persis berisi header "nama" dan "nisn".`,
+    };
+  }
+
   revalidatePath("/koordinator/siswa");
-  return { createdCount: created, skippedCount: skipped };
+  return { createdCount: created, skippedCount: emptyCount + duplicateCount, emptyCount, duplicateCount };
 }
