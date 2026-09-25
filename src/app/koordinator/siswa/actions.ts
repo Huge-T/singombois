@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { deleteStudentArtifacts } from "@/lib/consent";
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/dbRetry";
 
 async function requireCoordinator() {
   const session = await auth();
@@ -22,7 +23,7 @@ export async function setConsent(studentId: string, granted: boolean, guardianNa
   const user = await requireCoordinator();
   const status = granted ? "GRANTED" : "REVOKED";
 
-  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  const student = await withRetry(() => prisma.student.findUnique({ where: { id: studentId } }));
   if (!student || student.schoolId !== user.schoolId) throw new Error("Siswa tidak ditemukan");
 
   // PRIV-2: mencabut lewat koordinator harus punya efek sama dengan siswa
@@ -31,18 +32,20 @@ export async function setConsent(studentId: string, granted: boolean, guardianNa
     await deleteStudentArtifacts(studentId);
   }
 
-  await prisma.$transaction([
-    prisma.student.update({ where: { id: studentId }, data: { consentStatus: status } }),
-    prisma.consent.create({
-      data: {
-        studentId,
-        guardianName: guardianName || "Wali murid",
-        status,
-        grantedAt: granted ? new Date() : null,
-        revokedAt: granted ? null : new Date(),
-      },
-    }),
-  ]);
+  await withRetry(() =>
+    prisma.$transaction([
+      prisma.student.update({ where: { id: studentId }, data: { consentStatus: status } }),
+      prisma.consent.create({
+        data: {
+          studentId,
+          guardianName: guardianName || "Wali murid",
+          status,
+          grantedAt: granted ? new Date() : null,
+          revokedAt: granted ? null : new Date(),
+        },
+      }),
+    ])
+  );
   revalidatePath("/koordinator/siswa");
 }
 

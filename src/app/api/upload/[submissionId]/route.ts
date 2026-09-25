@@ -4,6 +4,7 @@ import { saveUploadedFile } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import { EXTRACTOR_VERSION, extractFeatures, runQualityGate } from "@/lib/analysis";
 import { RUBRIC_VERSION, overallWritingQuality, pickFocusAspect, scoreAspects } from "@/lib/rubric";
+import { withRetry } from "@/lib/dbRetry";
 
 export const runtime = "nodejs";
 
@@ -26,23 +27,6 @@ function looksLikeAcceptedImage(buffer: Buffer, mimeType: string): boolean {
     return buffer.subarray(4, 8).toString("ascii") === "ftyp";
   }
   return false;
-}
-
-// Database gratis (Neon) menangguhkan compute-nya saat tidak dipakai —
-// permintaan pertama setelah itu butuh beberapa detik untuk "membangunkan"
-// dan kadang gagal duluan. Coba ulang sekali sebelum benar-benar menyerah,
-// supaya siswa tidak perlu klik ulang manual untuk kasus umum ini.
-async function withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 1500): Promise<T> {
-  let lastError: unknown;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastError = e;
-      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  throw lastError;
 }
 
 // Safety net: apa pun yang lolos dari try/catch spesifik di bawah tetap
