@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
   // generik sebelum kode kita sempat jalan). Biarkan Next.js require() dia
   // langsung dari node_modules saat runtime, bukan coba membundlenya.
   serverExternalPackages: ["sharp"],
+  // serverExternalPackages saja belum cukup: terkonfirmasi lewat endpoint
+  // diagnostik bahwa file .so asli libvips (nested di @img/sharp-libvips-*)
+  // tetap tidak ikut ter-trace ke bundle fungsi Vercel (ERR_DLOPEN_FAILED).
+  // Paksa sertakan folder sharp & @img penuh untuk semua route API.
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
+  },
 };
 
 export default nextConfig;
