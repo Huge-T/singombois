@@ -108,7 +108,7 @@ export function ClassSection({
                 <span className={`pill ${consent.tone}`} style={{ width: 90, textAlign: "center" }}>
                   {consent.label}
                 </span>
-                <ConsentButtons studentId={s.id} status={s.consentStatus} />
+                <ConsentButtons studentId={s.id} status={s.consentStatus} teachers={teachers} />
                 <DeleteStudentButton studentId={s.id} name={s.name} />
               </div>
             );

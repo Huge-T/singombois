@@ -3,7 +3,20 @@
 import { useState, useTransition } from "react";
 import { setConsent } from "./actions";
 
-export function ConsentButtons({ studentId, status }: { studentId: string; status: string }) {
+interface TeacherOption {
+  id: string;
+  name: string;
+}
+
+export function ConsentButtons({
+  studentId,
+  status,
+  teachers,
+}: {
+  studentId: string;
+  status: string;
+  teachers: TeacherOption[];
+}) {
   const [pending, startTransition] = useTransition();
   const [guardianName, setGuardianName] = useState("");
   const [asking, setAsking] = useState(false);
@@ -34,13 +47,19 @@ export function ConsentButtons({ studentId, status }: { studentId: string; statu
   if (asking) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <input
+        <select
           autoFocus
-          placeholder="Nama wali"
           value={guardianName}
           onChange={(e) => setGuardianName(e.target.value)}
-          style={{ width: 120, padding: "5px 8px", border: "1px solid var(--edge-2)", borderRadius: 3, fontSize: 12 }}
-        />
+          style={{ fontSize: 12, padding: "5px 8px" }}
+        >
+          <option value="">Pilih guru...</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.name}>
+              {t.name}
+            </option>
+          ))}
+        </select>
         <button className="btn btn-sm" disabled={pending || !guardianName} onClick={() => submit(true, guardianName)}>
           {pending ? "..." : "Setujui"}
         </button>
