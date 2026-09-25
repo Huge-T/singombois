@@ -28,25 +28,33 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
     setError(null);
     setLoading(true);
 
-    const res = await signIn(mode === "siswa" ? "student" : "staff", {
-      redirect: false,
-      ...(mode === "siswa" ? { nisn, pin } : { email, password }),
-    });
+    try {
+      const res = await signIn(mode === "siswa" ? "student" : "staff", {
+        redirect: false,
+        ...(mode === "siswa" ? { nisn, pin } : { email, password }),
+      });
 
-    setLoading(false);
-    if (!res || res.error) {
-      setError(
-        mode === "siswa"
-          ? "NISN atau PIN salah. Coba lagi atau minta guru mengatur ulang PIN kamu."
-          : "Email atau kata sandi salah."
-      );
-      return;
+      if (!res || res.error) {
+        setError(
+          mode === "siswa"
+            ? "NISN atau PIN salah. Coba lagi atau minta guru mengatur ulang PIN kamu."
+            : "Email atau kata sandi salah."
+        );
+        return;
+      }
+
+      const session = await getSession();
+      const role = session?.user?.role ?? "STUDENT";
+      router.push(callbackUrl || ROLE_HOME[role] || "/");
+      router.refresh();
+    } catch {
+      // signIn/getSession bisa melempar exception (bukan cuma res.error) kalau
+      // server sempat error tak terduga di tengah proses — tanpa ini tombol
+      // macet permanen di "Memeriksa..." tanpa pesan apa pun ke siswa.
+      setError("Terjadi kesalahan tak terduga. Coba masuk lagi sebentar lagi.");
+    } finally {
+      setLoading(false);
     }
-
-    const session = await getSession();
-    const role = session?.user?.role ?? "STUDENT";
-    router.push(callbackUrl || ROLE_HOME[role] || "/");
-    router.refresh();
   }
 
   return (

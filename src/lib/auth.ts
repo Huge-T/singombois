@@ -6,6 +6,23 @@ import { clearFailedAttempts, isLocked, registerFailedAttempt } from "@/lib/logi
 
 export type AppRole = "STUDENT" | "TEACHER" | "GURU_BK" | "COORDINATOR" | "ADMIN" | "SUPER_ADMIN";
 
+// Database gratis (Neon) menangguhkan compute-nya saat tidak dipakai, dan makin
+// terasa saat banyak siswa login bersamaan (jam pelajaran) — permintaan pertama
+// kadang gagal duluan sebelum compute "bangun". Coba ulang sekali di sini supaya
+// login tidak ikut gagal karena hal yang sebetulnya transien.
+async function withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 1200): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -49,7 +66,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const pin = String(creds?.pin ?? "").trim();
         if (!nisn || !pin) return null;
 
-        const student = await prisma.student.findUnique({ where: { nisn } });
+        // NISN asli sering diawali 0 (10 digit), tapi Excel di rapor/daftar cetak
+        // rutin membuang nol di depan angka — siswa lalu login dengan versi 9
+        // digit yang salah tanpa sadar. Coba versi diberi nol di depan sebelum
+        // menyerah, sebelum reguler daftar 10 digit ini mengganggu login massal.
+        let student = await withRetry(() => prisma.student.findUnique({ where: { nisn } }));
+        if (!student && /^\d+$/.test(nisn) && nisn.length < 10) {
+          student = await withRetry(() => prisma.student.findUnique({ where: { nisn: nisn.padStart(10, "0") } }));
+        }
         if (!student || student.archivedAt) return null;
         if (isLocked(student.lockedUntil)) return null;
 
@@ -81,7 +105,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = String(creds?.password ?? "");
         if (!email || !password) return null;
 
-        const staff = await prisma.staffUser.findUnique({ where: { email } });
+        const staff = await withRetry(() => prisma.staffUser.findUnique({ where: { email } }));
         if (!staff) return null;
         if (isLocked(staff.lockedUntil)) return null;
 
