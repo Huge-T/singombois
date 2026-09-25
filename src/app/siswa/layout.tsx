@@ -39,6 +39,7 @@ export default async function SiswaLayout({ children }: { children: React.ReactN
     { href: "/siswa/kokurikuler", label: "Kokurikuler" },
     { href: "/siswa/latihan", label: "Latihan saya" },
     { href: "/siswa/konsultasi", label: "Konsultasiku", badge: answeredTickets || undefined },
+    { href: "/siswa/angket", label: "Ulasan" },
     { href: "/siswa/data-saya", label: "Data tentang saya" },
   ];
 

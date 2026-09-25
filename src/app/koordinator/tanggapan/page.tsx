@@ -33,10 +33,10 @@ export default async function TanggapanPage() {
   return (
     <div>
       <p className="crumb">KOORDINATOR</p>
-      <h2 className="h2">Tanggapan siswa</h2>
+      <h2 className="h2">Ulasan siswa</h2>
       <p className="sub">
-        Isian angket setelah siswa mencoba SINGO MBOIS. Kesan yang kamu setujui tampil di beranda;
-        saran perbaikan hanya dibaca di sini dan tidak pernah tayang.
+        Ulasan &amp; rating setelah siswa mencoba SINGO MBOIS. Ulasan yang kamu setujui tampil di
+        beranda; saran perbaikan hanya dibaca di sini dan tidak pernah tayang.
       </p>
 
       <div className="metrics">
@@ -65,7 +65,7 @@ export default async function TanggapanPage() {
           <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap", marginBottom: 8 }}>
             <b style={{ fontSize: 14.5 }}>{f.student.name}</b>
             <span style={{ fontSize: 12.5, color: "var(--tinta-lembut)" }}>{f.student.class.name}</span>
-            <span className="pill pill-singo">Paham: {f.clarityScore}/5</span>
+            <span className="pill pill-singo">{"★".repeat(f.clarityScore)}{"☆".repeat(5 - f.clarityScore)}</span>
             <span className="pill pill-graphite">{AWARENESS_LABEL[f.awareness]}</span>
             <span className={`pill ${f.displayConsent === "TIDAK" ? "pill-mark" : "pill-ok"}`}>
               {CONSENT_LABEL[f.displayConsent]}

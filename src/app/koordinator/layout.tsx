@@ -33,7 +33,7 @@ export default async function KoordinatorLayout({ children }: { children: React.
     { href: "/koordinator/kokurikuler", label: "Kokurikuler" },
     { href: "/koordinator/siswa", label: "Kelas & siswa", badge: pendingConsent || undefined },
     { href: "/koordinator/staf", label: "Kelola staf" },
-    { href: "/koordinator/tanggapan", label: "Tanggapan siswa", badge: pendingFeedback || undefined },
+    { href: "/koordinator/tanggapan", label: "Ulasan siswa", badge: pendingFeedback || undefined },
     { href: "/koordinator/log-akses", label: "Log akses" },
   ];
 

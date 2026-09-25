@@ -20,11 +20,11 @@ export default async function AngketPage({ params }: { params: Promise<{ id: str
 
   return (
     <div>
-      <p className="crumb">ANGKET · {literacySession.label.toUpperCase()}</p>
-      <h2 className="h2">Ceritakan pengalamanmu</h2>
+      <p className="crumb">ULASAN · {literacySession.label.toUpperCase()}</p>
+      <h2 className="h2">Beri ulasan pengalamanmu</h2>
       <p className="sub">
-        Lima pertanyaan, sekitar dua menit. Jawabanmu membantu tim memperbaiki layanan, dan kalau
-        kamu izinkan, kesanmu bisa tampil di beranda situs.
+        Kasih bintang & ceritakan pengalamanmu, sekitar dua menit. Ulasanmu membantu tim
+        memperbaiki layanan, dan kalau kamu izinkan, bisa tampil di beranda situs.
       </p>
 
       <AngketForm

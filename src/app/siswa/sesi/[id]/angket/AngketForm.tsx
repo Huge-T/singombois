@@ -1,9 +1,46 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitAngket, type AngketFormState } from "./actions";
 
 const initialState: AngketFormState = {};
+
+function StarRating({ initial }: { initial?: number }) {
+  const [rating, setRating] = useState(initial ?? 0);
+  const [hover, setHover] = useState(0);
+  const shown = hover || rating;
+
+  return (
+    <div>
+      <div role="radiogroup" aria-label="Rating 1 sampai 5 bintang" style={{ display: "flex", gap: 4 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={rating === n}
+            aria-label={`${n} bintang`}
+            onClick={() => setRating(n)}
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 2,
+              fontSize: 34,
+              lineHeight: 1,
+              color: shown >= n ? "var(--singo)" : "var(--garis)",
+            }}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <input type="hidden" name="clarityScore" value={rating} />
+    </div>
+  );
+}
 
 export function AngketForm({
   sessionId,
@@ -26,7 +63,26 @@ export function AngketForm({
       {state.error && <div className="error-box">{state.error}</div>}
 
       <div className="field">
-        <label>1. Sebelum ikut SINGO MBOIS, kamu tahu tidak kalau cara belajarmu bisa dibaca dari tulisan tangan?</label>
+        <label>Beri rating pengalamanmu ikut SINGO MBOIS</label>
+        <StarRating initial={initial?.clarityScore} />
+        <p className="hint">1 bintang = kurang membantu · 5 bintang = sangat membantu</p>
+      </div>
+
+      <div className="field">
+        <label htmlFor="impression">Tulis ulasanmu</label>
+        <textarea
+          id="impression"
+          name="impression"
+          rows={3}
+          defaultValue={initial?.impression}
+          placeholder="Ceritakan satu hal yang paling berkesan setelah ikut SINGO MBOIS..."
+          required
+        />
+        <p className="hint">Ulasan ini yang bisa tampil di situs (sesuai pilihanmu di bawah).</p>
+      </div>
+
+      <div className="field">
+        <label>Sebelum ikut SINGO MBOIS, kamu tahu tidak kalau cara belajarmu bisa dibaca dari tulisan tangan?</label>
         {[
           { value: "TAHU", label: "Tahu, dan sudah tahu caranya" },
           { value: "PERNAH_DENGAR", label: "Pernah dengar, tapi belum paham" },
@@ -40,32 +96,13 @@ export function AngketForm({
       </div>
 
       <div className="field">
-        <label>2. Setelah menerima hasil pembacaan, seberapa paham kamu dengan cara belajarmu sendiri?</label>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <label key={n} className="opt" style={{ marginBottom: 0 }}>
-              <input type="radio" name="clarityScore" value={n} defaultChecked={initial?.clarityScore === n} required />
-              {n}
-            </label>
-          ))}
-        </div>
-        <p className="hint">1 = tidak ada yang berubah · 5 = jauh lebih paham dari sebelumnya</p>
-      </div>
-
-      <div className="field">
-        <label htmlFor="impression">3. Ceritakan satu hal yang paling berkesan setelah ikut SINGO MBOIS.</label>
-        <textarea id="impression" name="impression" rows={3} defaultValue={initial?.impression} required />
-        <p className="hint">Jawaban ini yang bisa tampil di situs sebagai tanggapan siswa (sesuai pilihanmu di nomor 5).</p>
-      </div>
-
-      <div className="field">
-        <label htmlFor="suggestion">4. Ada yang perlu diperbaiki atau ditambahkan dari layanan SINGO MBOIS? (opsional)</label>
+        <label htmlFor="suggestion">Ada yang perlu diperbaiki atau ditambahkan? (opsional)</label>
         <textarea id="suggestion" name="suggestion" rows={2} defaultValue={initial?.suggestion} />
         <p className="hint">Hanya dibaca tim, tidak ditampilkan ke publik.</p>
       </div>
 
       <div className="field">
-        <label>5. Bolehkah kami menampilkan jawabanmu di nomor 3 di situs SINGO MBOIS?</label>
+        <label>Bolehkah kami menampilkan ulasanmu di situs SINGO MBOIS?</label>
         {[
           { value: "DENGAN_NAMA", label: "Ya, boleh, dan nama saya boleh dicantumkan" },
           { value: "ANONIM", label: "Ya, boleh, tapi tanpa nama (anonim)" },
@@ -79,7 +116,7 @@ export function AngketForm({
       </div>
 
       <button className="btn btn-block" type="submit" disabled={pending}>
-        {pending ? "Mengirim..." : initial ? "Perbarui tanggapan" : "Kirim tanggapan"}
+        {pending ? "Mengirim..." : initial ? "Perbarui ulasan" : "Kirim ulasan"}
       </button>
     </form>
   );

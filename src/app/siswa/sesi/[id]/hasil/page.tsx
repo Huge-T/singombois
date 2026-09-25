@@ -222,26 +222,26 @@ export default async function HasilPage({ params }: { params: Promise<{ id: stri
         {submission.feedbacks.length > 0 ? (
           <>
             <h4 style={{ fontFamily: "var(--display)", fontSize: 16, marginBottom: 6 }}>
-              Terima kasih, tanggapanmu sudah masuk.
+              Terima kasih, ulasanmu sudah masuk.
             </h4>
             <p style={{ fontSize: 13.5, color: "var(--tinta-lembut)", marginBottom: 12 }}>
-              Jawabanmu dibaca tim SINGO MBOIS. Kalau ada yang mau diubah, kamu bisa memperbaruinya.
+              Ulasanmu dibaca tim SINGO MBOIS. Kalau ada yang mau diubah, kamu bisa memperbaruinya.
             </p>
             <Link href={`/siswa/sesi/${id}/angket`} className="btn btn-ghost btn-sm">
-              Ubah tanggapan
+              Ubah ulasan
             </Link>
           </>
         ) : (
           <>
             <h4 style={{ fontFamily: "var(--display)", fontSize: 16, marginBottom: 6 }}>
-              Sudah ikut? Ceritakan pengalamanmu.
+              Sudah ikut? Beri ulasan pengalamanmu.
             </h4>
             <p style={{ fontSize: 13.5, color: "var(--tinta-lembut)", marginBottom: 12 }}>
-              Lima pertanyaan, sekitar dua menit. Boleh pakai nama, boleh tanpa nama, kamu yang
-              pilih di formulirnya.
+              Kasih bintang & ceritakan pengalamanmu, sekitar dua menit. Boleh pakai nama, boleh
+              tanpa nama, kamu yang pilih di formulirnya.
             </p>
             <Link href={`/siswa/sesi/${id}/angket`} className="btn btn-sm">
-              Isi angket
+              Beri ulasan
             </Link>
           </>
         )}
