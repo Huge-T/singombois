@@ -31,6 +31,7 @@ export function QuizRunner({
   initialAccepted: string[]; // id soal URAIAN yang sudah punya foto diterima
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [photoKind, setPhotoKind] = useState<Record<string, "TULISAN" | "GAMBAR">>({});
   const [photos, setPhotos] = useState<Record<string, PhotoState>>(() => {
     const init: Record<string, PhotoState> = {};
     for (const qId of initialAccepted) init[qId] = { status: "accepted" };
@@ -59,6 +60,7 @@ export function QuizRunner({
       }
       const fd = new FormData();
       fd.append("file", compressed);
+      fd.append("kind", photoKind[questionId] ?? "TULISAN");
       const res = await fetch(`/api/kokurikuler-upload/${quizId}/${questionId}`, { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {
@@ -131,7 +133,30 @@ export function QuizRunner({
               ))}
             {q.type === "URAIAN" && usesPhotoEssay && (
               <div>
-                <p className="hint">Tulis jawabanmu di lembar kerja, lalu foto dan unggah di sini.</p>
+                <p className="hint">Jenis karya</p>
+                <div className="seg" style={{ marginBottom: 10 }}>
+                  <button
+                    type="button"
+                    className={(photoKind[q.id] ?? "TULISAN") === "TULISAN" ? "on" : ""}
+                    disabled={photo?.status === "uploading"}
+                    onClick={() => setPhotoKind((prev) => ({ ...prev, [q.id]: "TULISAN" }))}
+                  >
+                    Tulisan
+                  </button>
+                  <button
+                    type="button"
+                    className={photoKind[q.id] === "GAMBAR" ? "on" : ""}
+                    disabled={photo?.status === "uploading"}
+                    onClick={() => setPhotoKind((prev) => ({ ...prev, [q.id]: "GAMBAR" }))}
+                  >
+                    Gambar
+                  </button>
+                </div>
+                <p className="hint">
+                  {photoKind[q.id] === "GAMBAR"
+                    ? "Gambar dibaca langsung oleh tim ahli, tanpa skor kerapian teknis."
+                    : "Tulis jawabanmu di lembar kerja, lalu foto dan unggah di sini."}
+                </p>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/heic,image/heif"

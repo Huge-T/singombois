@@ -623,6 +623,7 @@ model KokurikulerArtifact {
   id                 String            @id @default(cuid())
   answerId           String            @unique
   answer             KokurikulerAnswer @relation(fields: [answerId], references: [id])
+  kind               ArtifactKind      @default(TULISAN)
   originalPath       String
   qualityFlags       String
   accepted           Boolean

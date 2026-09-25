@@ -41,13 +41,17 @@ export default async function SiswaKokurikulerListPage() {
                 {done ? "SUDAH DIKUMPULKAN" : "BELUM DIKERJAKAN"}
               </span>
             </div>
-            {!done && (
-              <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 14 }}>
+              {done ? (
+                <Link href={`/siswa/kokurikuler/${q.id}/hasil`} className="btn btn-sm">
+                  Lihat hasil
+                </Link>
+              ) : (
                 <Link href={`/siswa/kokurikuler/${q.id}`} className="btn btn-sm">
                   Kerjakan
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         );
       })}

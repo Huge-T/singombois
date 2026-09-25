@@ -87,6 +87,7 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ quizId: s
     );
   }
   const file = formData.get("file");
+  const kind = formData.get("kind") === "GAMBAR" ? "GAMBAR" : "TULISAN";
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 400 });
   }
@@ -149,6 +150,7 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ quizId: s
     await prisma.kokurikulerArtifact.create({
       data: {
         answerId: answer.id,
+        kind,
         originalPath: publicPath,
         qualityFlags: JSON.stringify(gate.flags),
         accepted: false,
@@ -157,6 +159,24 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ quizId: s
       },
     });
     return NextResponse.json({ accepted: false, flags: gate.flags }, { status: 422 });
+  }
+
+  // Gambar (drawing/GAMBAR) dilewatkan dari ekstraksi fitur tulisan tangan &
+  // skoring grafologi — rubrik kerapian teknis tidak berlaku untuk gambar,
+  // sama seperti Artifact literasi.
+  if (kind === "GAMBAR") {
+    await prisma.kokurikulerArtifact.create({
+      data: {
+        answerId: answer.id,
+        kind: "GAMBAR",
+        originalPath: publicPath,
+        qualityFlags: JSON.stringify(gate.flags),
+        accepted: true,
+        ruledLinesDetected: 0,
+        calibrationMethod: "not_applicable_gambar",
+      },
+    });
+    return NextResponse.json({ accepted: true, kind: "GAMBAR" });
   }
 
   let calibration: Awaited<ReturnType<typeof extractFeatures>>["calibration"];
@@ -180,6 +200,7 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ quizId: s
   const artifact = await prisma.kokurikulerArtifact.create({
     data: {
       answerId: answer.id,
+      kind,
       originalPath: publicPath,
       qualityFlags: JSON.stringify(gate.flags),
       accepted: true,

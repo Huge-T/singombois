@@ -20,6 +20,7 @@ interface QuestionForDetail {
 }
 
 interface ArtifactForDetail {
+  kind: "TULISAN" | "GAMBAR";
   originalPath: string;
   accepted: boolean;
   qualityFlags: string;
@@ -110,7 +111,8 @@ export function AttemptDetail({
               {q.type === "URAIAN" && answer?.artifact ? (
                 <div>
                   <p className="hint">
-                    Foto jawaban {answer.artifact.accepted ? "(lolos cek kualitas)" : "(DITOLAK cek kualitas — foto tidak layak dianalisis)"}
+                    Foto jawaban ({answer.artifact.kind === "GAMBAR" ? "gambar" : "tulisan"}){" "}
+                    {answer.artifact.accepted ? "(lolos cek kualitas)" : "(DITOLAK cek kualitas — foto tidak layak dianalisis)"}
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
