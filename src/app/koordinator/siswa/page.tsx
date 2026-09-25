@@ -8,11 +8,14 @@ export default async function SiswaPage() {
   const session = await auth();
   const schoolId = session!.user.schoolId;
 
-  const classes = await prisma.class.findMany({
-    where: { schoolId },
-    include: { students: { orderBy: { name: "asc" }, where: { archivedAt: null } } },
-    orderBy: { name: "asc" },
-  });
+  const [classes, teachers] = await Promise.all([
+    prisma.class.findMany({
+      where: { schoolId },
+      include: { students: { orderBy: { name: "asc" }, where: { archivedAt: null } }, homeroomTeacher: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.staffUser.findMany({ where: { schoolId, role: "TEACHER" }, orderBy: { name: "asc" } }),
+  ]);
 
   return (
     <div>
@@ -71,6 +74,9 @@ export default async function SiswaPage() {
             nisn: s.nisn,
             consentStatus: s.consentStatus,
           }))}
+          homeroomTeacherId={c.homeroomTeacherId}
+          homeroomTeacherName={c.homeroomTeacher?.name ?? null}
+          teachers={teachers.map((t) => ({ id: t.id, name: t.name }))}
         />
       ))}
     </div>

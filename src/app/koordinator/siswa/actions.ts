@@ -174,6 +174,23 @@ export async function renameClass(classId: string, newName: string): Promise<str
   return updated.name;
 }
 
+export async function setHomeroomTeacher(classId: string, teacherId: string | null): Promise<void> {
+  const user = await requireCoordinator();
+
+  const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+  if (!targetClass || targetClass.schoolId !== user.schoolId) throw new Error("Kelas tidak ditemukan.");
+
+  if (teacherId) {
+    const teacher = await prisma.staffUser.findUnique({ where: { id: teacherId } });
+    if (!teacher || teacher.schoolId !== user.schoolId || teacher.role !== "TEACHER") {
+      throw new Error("Guru tidak ditemukan.");
+    }
+  }
+
+  await prisma.class.update({ where: { id: classId }, data: { homeroomTeacherId: teacherId } });
+  revalidatePath("/koordinator/siswa");
+}
+
 export async function deleteClass(classId: string) {
   const user = await requireCoordinator();
 

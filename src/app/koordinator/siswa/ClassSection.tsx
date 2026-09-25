@@ -6,6 +6,7 @@ import { ClassNameEditor } from "./ClassNameEditor";
 import { DeleteClassButton } from "./DeleteClassButton";
 import { ApproveAllButton } from "./ApproveAllButton";
 import { DeleteStudentButton } from "./DeleteStudentButton";
+import { HomeroomTeacherEditor } from "./HomeroomTeacherEditor";
 
 const CONSENT_LABEL: Record<string, { label: string; tone: string }> = {
   GRANTED: { label: "DISETUJUI", tone: "pill-ok" },
@@ -20,14 +21,25 @@ interface StudentRow {
   consentStatus: "GRANTED" | "PENDING" | "REVOKED";
 }
 
+interface TeacherOption {
+  id: string;
+  name: string;
+}
+
 export function ClassSection({
   classId,
   name,
   students,
+  homeroomTeacherId,
+  homeroomTeacherName,
+  teachers,
 }: {
   classId: string;
   name: string;
   students: StudentRow[];
+  homeroomTeacherId: string | null;
+  homeroomTeacherName: string | null;
+  teachers: TeacherOption[];
 }) {
   const [open, setOpen] = useState(false);
   const pendingCount = students.filter((s) => s.consentStatus === "PENDING").length;
@@ -61,6 +73,14 @@ export function ClassSection({
         <ApproveAllButton classId={classId} pendingCount={pendingCount} />
         <ClassNameEditor classId={classId} name={name} />
         <DeleteClassButton classId={classId} name={name} studentCount={students.length} />
+      </div>
+      <div style={{ marginTop: 4 }}>
+        <HomeroomTeacherEditor
+          classId={classId}
+          currentTeacherId={homeroomTeacherId}
+          currentTeacherName={homeroomTeacherName}
+          teachers={teachers}
+        />
       </div>
 
       {open && (
