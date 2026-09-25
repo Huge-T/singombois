@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DeleteSessionButton } from "./DeleteSessionButton";
 
 export default async function GuruDashboard() {
   const session = await auth();
@@ -48,6 +49,7 @@ export default async function GuruDashboard() {
               <Link href="/guru/tinjau" className="btn btn-sm">
                 Tinjau hasil
               </Link>
+              <DeleteSessionButton sessionId={s.id} label={s.label} />
             </div>
           </div>
         </div>

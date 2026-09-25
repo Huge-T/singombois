@@ -60,6 +60,11 @@ export default async function KelolaKokurikulerPage({ params }: { params: Promis
               <button className="btn btn-ghost">Tutup kuis</button>
             </form>
           )}
+          {quiz.status === "CLOSED" && (
+            <form action={openKokurikulerQuiz.bind(null, quiz.id)}>
+              <button className="btn">Buka lagi untuk siswa</button>
+            </form>
+          )}
         </div>
       )}
 
