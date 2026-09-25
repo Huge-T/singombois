@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseKokurikulerQuestionsCsv } from "@/lib/kokurikulerCsv";
+import { deleteUploadedFile } from "@/lib/storage";
+import { withRetry } from "@/lib/dbRetry";
 
 async function requireQuizOwner(quizId: string) {
   const session = await auth();
@@ -94,4 +96,31 @@ export async function closeKokurikulerQuiz(quizId: string) {
   revalidatePath(`/guru/kokurikuler/${quizId}`);
   revalidatePath("/guru/kokurikuler");
   revalidatePath("/siswa/kokurikuler");
+}
+
+export async function deleteKokurikulerQuiz(quizId: string) {
+  await requireQuizOwner(quizId);
+
+  const artifacts = await prisma.kokurikulerArtifact.findMany({
+    where: { answer: { attempt: { quizId } } },
+    select: { originalPath: true },
+  });
+  for (const artifact of artifacts) {
+    await deleteUploadedFile(artifact.originalPath);
+  }
+
+  await withRetry(() =>
+    prisma.$transaction([
+      prisma.kokurikulerFeatureSet.deleteMany({ where: { artifact: { answer: { attempt: { quizId } } } } }),
+      prisma.kokurikulerArtifact.deleteMany({ where: { answer: { attempt: { quizId } } } }),
+      prisma.kokurikulerAnswer.deleteMany({ where: { attempt: { quizId } } }),
+      prisma.kokurikulerReading.deleteMany({ where: { attempt: { quizId } } }),
+      prisma.kokurikulerAttempt.deleteMany({ where: { quizId } }),
+      prisma.kokurikulerQuizStudent.deleteMany({ where: { quizId } }),
+      prisma.kokurikulerQuestion.deleteMany({ where: { quizId } }),
+      prisma.kokurikulerQuiz.delete({ where: { id: quizId } }),
+    ])
+  );
+
+  revalidatePath("/guru/kokurikuler");
 }

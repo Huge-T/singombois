@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DeleteQuizButton } from "./DeleteQuizButton";
 
 export default async function KokurikulerListPage() {
   const session = await auth();
@@ -46,6 +47,7 @@ export default async function KokurikulerListPage() {
             <Link className="btn btn-ghost btn-sm" href={`/guru/kokurikuler/${q.id}/hasil`}>
               Lihat hasil
             </Link>
+            <DeleteQuizButton quizId={q.id} label={q.label} />
           </div>
         </div>
       ))}
