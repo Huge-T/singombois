@@ -28,20 +28,55 @@ function looksLikeAcceptedImage(buffer: Buffer, mimeType: string): boolean {
   return false;
 }
 
+// Database gratis (Neon) menangguhkan compute-nya saat tidak dipakai —
+// permintaan pertama setelah itu butuh beberapa detik untuk "membangunkan"
+// dan kadang gagal duluan. Coba ulang sekali sebelum benar-benar menyerah,
+// supaya siswa tidak perlu klik ulang manual untuk kasus umum ini.
+async function withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 1500): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastError;
+}
+
+// Safety net: apa pun yang lolos dari try/catch spesifik di bawah tetap
+// dikembalikan sebagai JSON, bukan halaman error 500 default Next.js —
+// tanpa ini, res.json() di client gagal parse dan tombol upload macet
+// permanen tanpa pesan (lihat SessionRunner.tsx handleUpload).
 export async function POST(req: NextRequest, ctx: { params: Promise<{ submissionId: string }> }) {
+  try {
+    return await handleUpload(req, ctx);
+  } catch (e) {
+    console.error("Upload gagal tak terduga:", e);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan tak terduga di server. Coba unggah ulang." },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleUpload(req: NextRequest, ctx: { params: Promise<{ submissionId: string }> }) {
   const { submissionId } = await ctx.params;
   const session = await auth();
   if (!session?.user || session.user.role !== "STUDENT") {
     return NextResponse.json({ error: "Tidak diizinkan" }, { status: 401 });
   }
 
-  const submission = await prisma.submission.findUnique({
-    where: { id: submissionId },
-    include: {
-      student: true,
-      session: { include: { worksheetTemplate: true } },
-    },
-  });
+  const submission = await withRetry(() =>
+    prisma.submission.findUnique({
+      where: { id: submissionId },
+      include: {
+        student: true,
+        session: { include: { worksheetTemplate: true } },
+      },
+    })
+  );
   if (!submission || submission.studentId !== session.user.id) {
     return NextResponse.json({ error: "Tidak diizinkan" }, { status: 403 });
   }
@@ -61,7 +96,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
     return NextResponse.json({ error: "Lembar kerja untuk sesi ini sudah dikumpulkan." }, { status: 409 });
   }
 
-  const formData = await req.formData();
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Gagal membaca berkas yang diunggah (koneksi mungkin terputus di tengah unggah). Coba lagi." },
+      { status: 400 }
+    );
+  }
   const file = formData.get("file");
   const kind = formData.get("kind") === "GAMBAR" ? "GAMBAR" : "TULISAN";
   if (!(file instanceof File)) {
@@ -96,11 +139,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ submission
     );
   }
 
-  const publicPath = await saveUploadedFile(
-    `uploads/${submissionId}/${Date.now()}.jpg`,
-    buffer,
-    "image/jpeg"
-  );
+  let publicPath: string;
+  try {
+    publicPath = await saveUploadedFile(`uploads/${submissionId}/${Date.now()}.jpg`, buffer, "image/jpeg");
+  } catch (e) {
+    console.error("Gagal menyimpan foto ke penyimpanan:", e);
+    return NextResponse.json(
+      { error: "Gagal menyimpan foto ke penyimpanan server. Coba lagi sebentar lagi." },
+      { status: 502 }
+    );
+  }
 
   if (!gate.accepted) {
     await prisma.artifact.create({
