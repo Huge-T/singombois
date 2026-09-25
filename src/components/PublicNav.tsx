@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { logoSingoMbois } from "@/content/assets";
 import { VisitPing } from "@/components/VisitPing";
+import { auth, type AppRole } from "@/lib/auth";
+import { SignOutButton } from "@/components/SignOutButton";
 
 const links = [
   { href: "/metode", label: "Grafologi" },
@@ -11,8 +13,22 @@ const links = [
   { href: "/untuk-sekolah-lain", label: "Sekolah lain" },
 ];
 
-export function PublicNav({ active }: { active?: string }) {
+const ROLE_HOME: Record<AppRole, string> = {
+  STUDENT: "/siswa",
+  TEACHER: "/guru",
+  GURU_BK: "/bk",
+  COORDINATOR: "/koordinator",
+  ADMIN: "/koordinator",
+  SUPER_ADMIN: "/koordinator",
+};
+
+export async function PublicNav({ active }: { active?: string }) {
   const logo = logoSingoMbois();
+  // Halaman publik (mis. beranda) tidak sadar sesi login sama sekali —
+  // guru/admin yang klik wordmark dari dasbor mereka mendarat di sini dan
+  // cuma lihat tombol "Masuk" generik, kelihatan seperti otomatis logout
+  // padahal sesinya masih valid. Tunjukkan jalan balik + tombol Keluar asli.
+  const session = await auth();
   return (
     <header className="situs">
       <VisitPing />
@@ -20,8 +36,10 @@ export function PublicNav({ active }: { active?: string }) {
         <Link className="merek" href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {logo && <img src={logo} alt="Logo SINGO MBOIS" />}
-          <b>SINGO MBOIS</b>
-          <span>SMPN 27 Malang</span>
+          <span className="merek-lines">
+            <b>SINGO MBOIS</b>
+            <span>SMPN 27 Malang</span>
+          </span>
         </Link>
         <div className="nav-tautan">
           {links.map((l) => (
@@ -30,9 +48,18 @@ export function PublicNav({ active }: { active?: string }) {
             </Link>
           ))}
         </div>
-        <Link href="/masuk" className="tombol tombol-utama tombol-kecil">
-          Masuk
-        </Link>
+        {session?.user ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <Link href={ROLE_HOME[session.user.role]} className="tombol tombol-utama tombol-kecil">
+              Ke beranda saya
+            </Link>
+            <SignOutButton />
+          </span>
+        ) : (
+          <Link href="/masuk" className="tombol tombol-utama tombol-kecil">
+            Masuk
+          </Link>
+        )}
       </nav>
     </header>
   );

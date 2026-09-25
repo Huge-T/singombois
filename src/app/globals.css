@@ -118,40 +118,22 @@ header.situs {
   align-items: center;
   gap: 28px;
 }
-.merek {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--tinta);
-  margin-right: auto;
-}
-.merek b {
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 19px;
-  letter-spacing: -0.02em;
-  font-variation-settings: "wdth" 85;
-}
-.merek span {
-  font-size: 11px;
-  color: var(--tinta-lembut);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.merek img {
-  height: 30px;
-  width: auto;
-  align-self: center;
-}
+.merek,
 .wordmark {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   text-decoration: none;
   color: var(--tinta);
   margin-right: auto;
 }
+.merek-lines,
+.wordmark-lines {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.merek b,
 .wordmark b {
   font-family: var(--display);
   font-weight: 800;
@@ -159,11 +141,17 @@ header.situs {
   letter-spacing: -0.02em;
   font-variation-settings: "wdth" 85;
 }
+.merek span,
 .wordmark span {
   font-size: 11px;
   color: var(--tinta-lembut);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.merek img,
+.wordmark img {
+  height: 34px;
+  width: auto;
 }
 .nav a.tautan {
   font-size: 14px;

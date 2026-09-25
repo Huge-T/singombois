@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SideNavLinks } from "@/components/SideNavLinks";
+import { logoSingoMbois } from "@/content/assets";
 
 export interface NavItem {
   href: string;
@@ -23,13 +24,18 @@ export function AppShell({
   userInitials: string;
   children: React.ReactNode;
 }) {
+  const logo = logoSingoMbois();
   return (
     <div>
       <header className="situs">
         <nav className="nav">
           <Link href="/" className="wordmark">
-            <b>SINGO MBOIS</b>
-            <span>SMPN 27 Malang</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {logo && <img src={logo} alt="Logo SINGO MBOIS" />}
+            <span className="wordmark-lines">
+              <b>SINGO MBOIS</b>
+              <span>SMPN 27 Malang</span>
+            </span>
           </Link>
           <SignOutButton />
         </nav>
