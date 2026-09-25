@@ -7,7 +7,6 @@ import { z } from "zod";
 
 const schema = z.object({
   mode: z.enum(["LOW", "MIDDLE", "HIGH", "UMUM"]),
-  classId: z.string().min(1),
   readingTextId: z.string().optional(),
   audioMaterialId: z.string().optional(),
   storyPromptId: z.string().optional(),
@@ -32,7 +31,17 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
   }
   const d = parsed.data;
+  const classIds = formData.getAll("classIds").map(String).filter(Boolean);
+  if (classIds.length === 0) {
+    return { error: "Pilih minimal satu kelas." };
+  }
   const studentIds = formData.getAll("studentIds").map(String).filter(Boolean);
+  // Target siswa individual cuma masuk akal untuk satu kelas — kalau guru
+  // pilih beberapa kelas sekaligus, sesi otomatis berlaku untuk semua siswa
+  // di tiap kelas (tidak ada penargetan per-siswa untuk pembuatan massal ini).
+  if (studentIds.length > 0 && classIds.length > 1) {
+    return { error: "Penargetan siswa tertentu hanya bisa dipakai untuk satu kelas." };
+  }
 
   // Kebutuhan materi per mode: Low = teks + audio + gambar bercerita;
   // Middle/High = audio + gambar bercerita; Umum (literasi lama) = teks + audio.
@@ -53,9 +62,16 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
     }
   }
 
+  const validClassCount = await prisma.class.count({
+    where: { id: { in: classIds }, schoolId: session.user.schoolId },
+  });
+  if (validClassCount !== classIds.length) {
+    return { error: "Ada kelas terpilih yang tidak ditemukan." };
+  }
+
   if (studentIds.length > 0) {
     const validCount = await prisma.student.count({
-      where: { id: { in: studentIds }, classId: d.classId, archivedAt: null },
+      where: { id: { in: studentIds }, classId: classIds[0], archivedAt: null },
     });
     if (validCount !== studentIds.length) {
       return { error: "Ada siswa terpilih yang bukan anggota kelas ini." };
@@ -68,23 +84,33 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
     return { error: "Waktu tutup harus setelah waktu buka" };
   }
 
-  const created = await prisma.session.create({
-    data: {
-      classId: d.classId,
-      level: d.mode === "UMUM" ? "LOW" : d.mode,
-      readingTextId: d.readingTextId || null,
-      audioMaterialId: d.audioMaterialId || null,
-      storyPromptId: d.mode === "UMUM" ? null : d.storyPromptId || null,
-      worksheetTemplateId: d.worksheetTemplateId,
-      label: d.label,
-      opensAt,
-      closesAt,
-      createdById: session.user.id,
-      status: "OPEN",
-      targetedStudents:
-        studentIds.length > 0 ? { create: studentIds.map((id) => ({ studentId: id })) } : undefined,
-    },
-  });
+  const createdSessions = await Promise.all(
+    classIds.map((classId) =>
+      prisma.session.create({
+        data: {
+          classId,
+          level: d.mode === "UMUM" ? "LOW" : d.mode,
+          readingTextId: d.readingTextId || null,
+          audioMaterialId: d.audioMaterialId || null,
+          storyPromptId: d.mode === "UMUM" ? null : d.storyPromptId || null,
+          worksheetTemplateId: d.worksheetTemplateId,
+          label: d.label,
+          opensAt,
+          closesAt,
+          createdById: session.user.id,
+          status: "OPEN",
+          targetedStudents:
+            studentIds.length > 0 ? { create: studentIds.map((id) => ({ studentId: id })) } : undefined,
+        },
+      })
+    )
+  );
 
-  redirect(`/guru/sesi/${created.id}/cetak`);
+  // Satu kelas: langsung ke cetak lembar kerja seperti alur lama. Beberapa
+  // kelas sekaligus: tiap kelas butuh lembar kerjanya sendiri, jadi arahkan
+  // ke daftar sesi supaya guru bisa buka cetak per kelas satu-satu.
+  if (createdSessions.length === 1) {
+    redirect(`/guru/sesi/${createdSessions[0].id}/cetak`);
+  }
+  redirect("/guru");
 }

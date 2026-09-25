@@ -5,6 +5,7 @@ import { ConsentButtons } from "./ConsentButtons";
 import { ClassNameEditor } from "./ClassNameEditor";
 import { DeleteClassButton } from "./DeleteClassButton";
 import { ApproveAllButton } from "./ApproveAllButton";
+import { DeleteStudentButton } from "./DeleteStudentButton";
 
 const CONSENT_LABEL: Record<string, { label: string; tone: string }> = {
   GRANTED: { label: "DISETUJUI", tone: "pill-ok" },
@@ -88,6 +89,7 @@ export function ClassSection({
                   {consent.label}
                 </span>
                 <ConsentButtons studentId={s.id} status={s.consentStatus} />
+                <DeleteStudentButton studentId={s.id} name={s.name} />
               </div>
             );
           })}

@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { RevokeButton } from "./RevokeButton";
 
 const CONSENT_LABEL: Record<string, string> = {
-  GRANTED: "Disetujui wali murid",
-  PENDING: "Menunggu persetujuan wali murid",
+  GRANTED: "Disetujui wali kelas",
+  PENDING: "Menunggu persetujuan wali kelas",
   REVOKED: "Dicabut, unggahan lama telah dihapus",
 };
 

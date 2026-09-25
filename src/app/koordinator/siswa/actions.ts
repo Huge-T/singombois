@@ -46,6 +46,44 @@ export async function setConsent(studentId: string, granted: boolean, guardianNa
   revalidatePath("/koordinator/siswa");
 }
 
+/**
+ * Hapus siswa permanen (bukan cuma cabut persetujuan) — dipakai untuk
+ * membersihkan data dobel (mis. NISN sama tapi beda format angka 0 di depan
+ * dari impor CSV berulang). Menghapus semua data terkait dulu supaya tidak
+ * kena constraint foreign key, lalu baris siswanya sendiri.
+ */
+export async function deleteStudent(studentId: string) {
+  const user = await requireCoordinator();
+
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student || student.schoolId !== user.schoolId) throw new Error("Siswa tidak ditemukan");
+
+  await deleteStudentArtifacts(studentId);
+
+  try {
+    await prisma.$transaction([
+      prisma.characterReading.deleteMany({ where: { submission: { studentId } } }),
+      prisma.consultMessage.deleteMany({ where: { ticket: { studentId } } }),
+      prisma.consultTicket.deleteMany({ where: { studentId } }),
+      prisma.feedback.deleteMany({ where: { studentId } }),
+      prisma.finalConclusion.deleteMany({ where: { studentId } }),
+      prisma.exerciseAssignment.deleteMany({ where: { studentId } }),
+      prisma.sessionStudent.deleteMany({ where: { studentId } }),
+      prisma.kokurikulerReading.deleteMany({ where: { attempt: { studentId } } }),
+      prisma.kokurikulerAnswer.deleteMany({ where: { attempt: { studentId } } }),
+      prisma.kokurikulerAttempt.deleteMany({ where: { studentId } }),
+      prisma.kokurikulerQuizStudent.deleteMany({ where: { studentId } }),
+      prisma.consent.deleteMany({ where: { studentId } }),
+      prisma.submission.deleteMany({ where: { studentId } }),
+      prisma.student.delete({ where: { id: studentId } }),
+    ]);
+  } catch {
+    throw new Error("Gagal menghapus siswa — masih ada data terkait yang tidak terduga.");
+  }
+
+  revalidatePath("/koordinator/siswa");
+}
+
 /** Setujui sekaligus semua siswa berstatus PENDING di satu kelas — tidak
  *  menyentuh yang sudah DICABUT (itu perlu keputusan sadar per siswa). */
 export async function approveAllPendingConsent(classId: string, guardianNote: string): Promise<number> {
@@ -186,6 +224,18 @@ function pickField(row: Record<string, string>, aliases: string[]): string {
   return "";
 }
 
+// NISN standar 10 digit. Excel/Sheets sering menganggap kolom NISN sebagai
+// angka lalu menghapus angka 0 di depan saat disimpan ulang — tanpa ini,
+// "0111075727" dan "111075727" dianggap dua siswa berbeda padahal orang yang
+// sama, menghasilkan data siswa dobel tiap kali CSV diekspor ulang dan diimpor.
+function normalizeNisn(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^\d+$/.test(trimmed) && trimmed.length < 10) {
+    return trimmed.padStart(10, "0");
+  }
+  return trimmed;
+}
+
 export async function importStudentsCsv(_prev: ImportState, formData: FormData): Promise<ImportState> {
   const user = await requireCoordinator();
   const classId = String(formData.get("classId") ?? "");
@@ -213,7 +263,7 @@ export async function importStudentsCsv(_prev: ImportState, formData: FormData):
 
   for (const row of parsed.data) {
     const name = pickField(row, NAME_HEADER_ALIASES);
-    const nisn = pickField(row, NISN_HEADER_ALIASES);
+    const nisn = normalizeNisn(pickField(row, NISN_HEADER_ALIASES));
     if (!name || !nisn) {
       emptyCount++;
       continue;

@@ -99,6 +99,29 @@ const TYPE_ALIASES: Record<string, KokurikulerQuestionType> = {
   ESSAY: "URAIAN",
 };
 
+// Sebagian guru menaruh semua pilihan dalam SATU kolom (mis. "Opsi Soal")
+// alih-alih 4 kolom terpisah opsi_a..d, dengan tiap baris diawali "A."/"B."/
+// dst. Dipakai sebagai fallback kalau opsi_a..d kosong/kurang dari 2 terisi —
+// hanya memecah teks yang SUDAH diberi label huruf, tidak menebak apa pun.
+const MERGED_OPTIONS_COLUMNS = ["opsi_soal", "opsi", "opsi_jawaban", "pilihan_jawaban"];
+
+function parseMergedOptions(raw: Record<string, string>): string[] {
+  for (const col of MERGED_OPTIONS_COLUMNS) {
+    const value = raw[col];
+    if (!value || !value.trim()) continue;
+    const options = ["", "", "", ""];
+    for (const line of value.split(/\r?\n/)) {
+      const m = line.trim().match(/^([A-D])[.)\-]\s*(.+)$/i);
+      if (m) {
+        const idx = OPTION_LETTERS.indexOf(m[1].toUpperCase());
+        if (idx !== -1) options[idx] = m[2].trim();
+      }
+    }
+    if (options.filter((o) => o.length > 0).length >= 2) return options;
+  }
+  return ["", "", "", ""];
+}
+
 export function parseKokurikulerQuestionsCsv(csvText: string): ParseKokurikulerCsvResult {
   const parsed = Papa.parse<Record<string, string>>(csvText, {
     header: true,
@@ -131,16 +154,26 @@ export function parseKokurikulerQuestionsCsv(csvText: string): ParseKokurikulerC
     const personalityDimension = dimensiRaw || null;
 
     if (type === "PILIHAN_GANDA") {
-      const options = OPTION_KEYS.map((key) => (raw[key] ?? "").trim());
+      let options = OPTION_KEYS.map((key) => (raw[key] ?? "").trim());
+      if (options.filter((o) => o.length > 0).length < 2) {
+        options = parseMergedOptions(raw);
+      }
       const filledCount = options.filter((o) => o.length > 0).length;
       if (filledCount < 2) {
         errors.push({ rowNumber, message: "Soal pilihan ganda butuh minimal 2 opsi terisi" });
         return;
       }
-      const kunci = (raw.kunci_jawaban ?? "").trim().toUpperCase();
+      const kunciRaw = (raw.kunci_jawaban ?? "").trim();
+      const kunci = kunciRaw.toUpperCase();
       const kunciIndex = OPTION_LETTERS.indexOf(kunci);
       if (kunciIndex === -1 || !options[kunciIndex]) {
-        errors.push({ rowNumber, message: "Kunci jawaban harus A/B/C/D dan opsinya harus terisi" });
+        const looksMerged = kunciRaw.includes("\n");
+        errors.push({
+          rowNumber,
+          message: looksMerged
+            ? "Kunci jawaban berisi lebih dari satu baris — isi cuma satu huruf A/B/C/D yang benar, jangan tempel teks pilihan lengkap"
+            : "Kunci jawaban harus A/B/C/D dan opsinya harus terisi",
+        });
         return;
       }
       rows.push({
