@@ -17,7 +17,15 @@ interface StudentOption {
 
 const initialState: CreateQuizState = {};
 
-export function CreateQuizForm({ classes, students }: { classes: Option[]; students: StudentOption[] }) {
+export function CreateQuizForm({
+  classes,
+  students,
+  templates,
+}: {
+  classes: Option[];
+  students: StudentOption[];
+  templates: Option[];
+}) {
   const [state, formAction, pending] = useActionState(createKokurikulerQuiz, initialState);
   const [classIds, setClassIds] = useState<string[]>(classes[0] ? [classes[0].id] : []);
   const [pilihSiswa, setPilihSiswa] = useState(false);
@@ -100,6 +108,25 @@ export function CreateQuizForm({ classes, students }: { classes: Option[]; stude
           {!pilihSiswa && <p className="hint">Tanpa dicentang, kuis berlaku untuk seluruh siswa kelas.</p>}
         </div>
       )}
+
+      <div className="field">
+        <label htmlFor="worksheetTemplateId">Lembar kerja untuk soal uraian</label>
+        <select id="worksheetTemplateId" name="worksheetTemplateId" required defaultValue="">
+          <option value="" disabled>
+            Pilih template lembar kerja...
+          </option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <p className="hint">
+          Kalau kuis punya soal uraian, siswa menulis di lembar kerja ini lalu memfoto jawabannya (dianalisis
+          grafologi juga). Kalau kuis tidak punya soal uraian, template ini tidak dipakai.
+        </p>
+        {templates.length === 0 && <p className="hint">Belum ada template lembar kerja — minta koordinator menambahkannya.</p>}
+      </div>
 
       <div className="field">
         <label htmlFor="opensAt">Dibuka</label>

@@ -23,8 +23,14 @@ export default async function SiswaKokurikulerQuizPage({ params }: { params: Pro
 
   const existing = await prisma.kokurikulerAttempt.findUnique({
     where: { quizId_studentId: { quizId, studentId: student.id } },
+    include: { answers: { include: { artifact: true } } },
   });
   if (existing?.submittedAt) redirect("/siswa/kokurikuler");
+
+  const usesPhotoEssay = Boolean(quiz.worksheetTemplateId);
+  const initialAccepted = (existing?.answers ?? [])
+    .filter((a) => a.artifact?.accepted)
+    .map((a) => a.questionId);
 
   return (
     <div>
@@ -41,6 +47,8 @@ export default async function SiswaKokurikulerQuizPage({ params }: { params: Pro
           text: q.text,
           optionsJson: q.optionsJson,
         }))}
+        usesPhotoEssay={usesPhotoEssay}
+        initialAccepted={initialAccepted}
       />
     </div>
   );

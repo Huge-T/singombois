@@ -181,7 +181,8 @@ model WorksheetTemplate {
   lineHeightMm Float  @default(8)
   minWords     Int    @default(30)
 
-  sessions Session[]
+  sessions           Session[]
+  kokurikulerQuizzes KokurikulerQuiz[]
 }
 
 model ExerciseModule {
@@ -527,18 +528,25 @@ enum KokurikulerQuestionType {
 }
 
 model KokurikulerQuiz {
-  id          String        @id @default(cuid())
-  classId     String
-  class       Class         @relation(fields: [classId], references: [id])
-  createdById String
-  createdBy   StaffUser     @relation(fields: [createdById], references: [id])
-  label       String
-  tema        String?
-  opensAt     DateTime
-  closesAt    DateTime
-  status      SessionStatus @default(DRAFT) // DRAFT = disusun; OPEN = siswa bisa mengerjakan; CLOSED
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                  String            @id @default(cuid())
+  classId             String
+  class               Class             @relation(fields: [classId], references: [id])
+  createdById         String
+  createdBy           StaffUser         @relation(fields: [createdById], references: [id])
+  label               String
+  tema                String?
+  // Dipakai siswa mencetak & menulis jawaban uraian (kalau ada) supaya foto
+  // jawabannya bisa dikalibrasi grafologi sama seperti lembar kerja literasi.
+  // Nullable karena kuis lama (sebelum fitur ini) tidak punya template — kuis
+  // itu tetap pakai jawaban uraian berupa teks (lihat QuizRunner). Form
+  // pembuatan kuis BARU mewajibkan field ini di level aplikasi.
+  worksheetTemplateId String?
+  worksheetTemplate   WorksheetTemplate? @relation(fields: [worksheetTemplateId], references: [id])
+  opensAt             DateTime
+  closesAt            DateTime
+  status              SessionStatus     @default(DRAFT) // DRAFT = disusun; OPEN = siswa bisa mengerjakan; CLOSED
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   questions        KokurikulerQuestion[]
   attempts         KokurikulerAttempt[]
@@ -600,10 +608,42 @@ model KokurikulerAnswer {
   attempt    KokurikulerAttempt  @relation(fields: [attemptId], references: [id])
   questionId String
   question   KokurikulerQuestion @relation(fields: [questionId], references: [id])
-  answerText String // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: teks bebas
+  answerText String? // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: null (diganti foto, lihat artifact)
   isCorrect  Boolean? // null untuk URAIAN; dihitung saat submit utk PG/Benar-Salah
 
+  artifact KokurikulerArtifact?
+
   @@unique([attemptId, questionId])
+}
+
+// Foto jawaban uraian — satu per soal URAIAN, diunggah & dianalisis saat
+// siswa masih mengerjakan (bukan di akhir), mirror Artifact literasi tapi
+// terikat ke KokurikulerAnswer, bukan Submission.
+model KokurikulerArtifact {
+  id                 String            @id @default(cuid())
+  answerId           String            @unique
+  answer             KokurikulerAnswer @relation(fields: [answerId], references: [id])
+  originalPath       String
+  qualityFlags       String
+  accepted           Boolean
+  ruledLinesDetected Int
+  mmPerPx            Float?
+  calibrationMethod  String
+  createdAt          DateTime          @default(now())
+
+  featureSet KokurikulerFeatureSet?
+}
+
+model KokurikulerFeatureSet {
+  id               String              @id @default(cuid())
+  artifactId       String              @unique
+  artifact         KokurikulerArtifact @relation(fields: [artifactId], references: [id])
+  extractorVersion String
+  featuresJson     String
+  confidenceJson   String
+  aspectsJson      String // hasil scoreAspects() — dipakai tampilkan detail per aspek
+  writingQuality   Float? // ringkasan grafologi 0-100 utk jawaban ini
+  createdAt        DateTime            @default(now())
 }
 
 // Kesimpulan analisis kepribadian per attempt, ditulis manusia (guru pembuat

@@ -43,7 +43,7 @@ export interface PatternQuestionInput {
 
 export interface PatternAnswerInput {
   questionId: string;
-  answerText: string;
+  answerText: string | null;
   isCorrect: boolean | null;
 }
 
@@ -60,11 +60,15 @@ export function summarizeKokurikulerPersonalityPattern(
     if (!answer) continue;
 
     if (question.type === "URAIAN") {
-      essayNotes.push({
-        dimension: question.personalityDimension,
-        questionText: question.text,
-        answerText: answer.answerText,
-      });
+      // URAIAN sekarang bisa berupa foto (answerText null) — tidak ada teks
+      // untuk dikutip di sini, guru baca langsung dari foto di AttemptDetail.
+      if (answer.answerText) {
+        essayNotes.push({
+          dimension: question.personalityDimension,
+          questionText: question.text,
+          answerText: answer.answerText,
+        });
+      }
       continue;
     }
 

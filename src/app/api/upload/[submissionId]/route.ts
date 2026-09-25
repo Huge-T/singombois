@@ -5,29 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { EXTRACTOR_VERSION, extractFeatures, runQualityGate } from "@/lib/analysis";
 import { RUBRIC_VERSION, overallWritingQuality, pickFocusAspect, scoreAspects } from "@/lib/rubric";
 import { withRetry } from "@/lib/dbRetry";
+import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES, looksLikeAcceptedImage } from "@/lib/imageValidation";
 
 export const runtime = "nodejs";
-
-const MAX_BYTES = 10 * 1024 * 1024; // UP-1: max 10MB
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/heic", "image/heif"];
-
-// file.type dikirim client, mudah dipalsukan — cek magic bytes betulan
-// sebagai lapisan tambahan sebelum buffer diproses lebih jauh.
-function looksLikeAcceptedImage(buffer: Buffer, mimeType: string): boolean {
-  if (buffer.length < 12) return false;
-  if (mimeType === "image/jpeg") {
-    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-  }
-  if (mimeType === "image/png") {
-    const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    return sig.every((b, i) => buffer[i] === b);
-  }
-  if (mimeType === "image/heic" || mimeType === "image/heif") {
-    // ISO base media file format (HEIC/HEIF/MP4-family): byte 4-7 = "ftyp".
-    return buffer.subarray(4, 8).toString("ascii") === "ftyp";
-  }
-  return false;
-}
 
 // Safety net: apa pun yang lolos dari try/catch spesifik di bawah tetap
 // dikembalikan sebagai JSON, bukan halaman error 500 default Next.js —
@@ -94,10 +74,10 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ submissio
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Berkas tidak ditemukan" }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json({ error: "Berkas lebih dari 10MB" }, { status: 400 });
   }
-  if (!ACCEPTED_TYPES.includes(file.type)) {
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     return NextResponse.json({ error: "Format berkas harus JPG, PNG, atau HEIC" }, { status: 400 });
   }
 

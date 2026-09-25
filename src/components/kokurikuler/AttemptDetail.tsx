@@ -19,10 +19,18 @@ interface QuestionForDetail {
   personalityDimension: string | null;
 }
 
+interface ArtifactForDetail {
+  originalPath: string;
+  accepted: boolean;
+  qualityFlags: string;
+  featureSet: { writingQuality: number | null } | null;
+}
+
 interface AnswerForDetail {
   questionId: string;
-  answerText: string;
+  answerText: string | null;
   isCorrect: boolean | null;
+  artifact: ArtifactForDetail | null;
 }
 
 interface ReadingForDetail {
@@ -99,11 +107,32 @@ export function AttemptDetail({
                   ))}
                 </ul>
               )}
-              <p>
-                Jawaban siswa: <strong>{answer?.answerText || "-"}</strong>{" "}
-                {answer?.isCorrect === true && <span className="pill pill-ok">Benar</span>}
-                {answer?.isCorrect === false && <span className="pill">Salah</span>}
-              </p>
+              {q.type === "URAIAN" && answer?.artifact ? (
+                <div>
+                  <p className="hint">
+                    Foto jawaban {answer.artifact.accepted ? "(lolos cek kualitas)" : "(DITOLAK cek kualitas — foto tidak layak dianalisis)"}
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={answer.artifact.originalPath}
+                    alt={`Foto jawaban uraian soal ${q.order}`}
+                    style={{ maxWidth: 360, border: "1px solid var(--garis)", borderRadius: 4 }}
+                  />
+                  {answer.artifact.featureSet?.writingQuality != null && (
+                    <p className="hint" style={{ marginTop: 6 }}>
+                      Kualitas tulisan (grafologi): <strong>{Math.round(answer.artifact.featureSet.writingQuality)}</strong>
+                    </p>
+                  )}
+                </div>
+              ) : q.type === "URAIAN" ? (
+                <p>Jawaban siswa: <strong>{answer?.answerText || "-"}</strong></p>
+              ) : (
+                <p>
+                  Jawaban siswa: <strong>{answer?.answerText || "-"}</strong>{" "}
+                  {answer?.isCorrect === true && <span className="pill pill-ok">Benar</span>}
+                  {answer?.isCorrect === false && <span className="pill">Salah</span>}
+                </p>
+              )}
             </div>
           );
         })}

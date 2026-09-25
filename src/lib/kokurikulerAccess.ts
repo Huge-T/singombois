@@ -24,7 +24,12 @@ export async function loadQuizForViewer(quizId: string, viewer: KokurikulerViewe
       createdBy: true,
       questions: { orderBy: { order: "asc" } },
       attempts: {
-        include: { student: true, answers: true, reading: { include: { reader: true } }, essayGradedBy: true },
+        include: {
+          student: true,
+          answers: { include: { artifact: { include: { featureSet: true } } } },
+          reading: { include: { reader: true } },
+          essayGradedBy: true,
+        },
         orderBy: { createdAt: "asc" },
       },
       targetedStudents: true,

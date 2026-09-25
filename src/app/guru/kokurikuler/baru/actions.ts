@@ -9,6 +9,7 @@ import { parseWibDateTimeLocal } from "@/lib/wibTime";
 const schema = z.object({
   label: z.string().min(3),
   tema: z.string().optional(),
+  worksheetTemplateId: z.string().min(1),
   opensAt: z.string().min(1),
   closesAt: z.string().min(1),
 });
@@ -48,6 +49,11 @@ export async function createKokurikulerQuiz(_prev: CreateQuizState, formData: Fo
     return { error: "Ada kelas terpilih yang tidak ditemukan." };
   }
 
+  const template = await prisma.worksheetTemplate.findUnique({ where: { id: d.worksheetTemplateId } });
+  if (!template || template.schoolId !== session.user.schoolId) {
+    return { error: "Template lembar kerja tidak ditemukan." };
+  }
+
   if (studentIds.length > 0) {
     const validCount = await prisma.student.count({
       where: { id: { in: studentIds }, classId: classIds[0], archivedAt: null },
@@ -70,6 +76,7 @@ export async function createKokurikulerQuiz(_prev: CreateQuizState, formData: Fo
           classId,
           label: d.label,
           tema: d.tema || null,
+          worksheetTemplateId: d.worksheetTemplateId,
           opensAt,
           closesAt,
           createdById: session.user.id,
