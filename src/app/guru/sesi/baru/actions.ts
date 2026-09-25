@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parseWibDateTimeLocal } from "@/lib/wibTime";
 import { z } from "zod";
 
 const schema = z.object({
@@ -78,8 +79,8 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
     }
   }
 
-  const opensAt = new Date(d.opensAt);
-  const closesAt = new Date(d.closesAt);
+  const opensAt = parseWibDateTimeLocal(d.opensAt);
+  const closesAt = parseWibDateTimeLocal(d.closesAt);
   if (closesAt <= opensAt) {
     return { error: "Waktu tutup harus setelah waktu buka" };
   }

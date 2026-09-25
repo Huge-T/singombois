@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parseWibDateTimeLocal } from "@/lib/wibTime";
 
 const schema = z.object({
   label: z.string().min(3),
@@ -56,8 +57,8 @@ export async function createKokurikulerQuiz(_prev: CreateQuizState, formData: Fo
     }
   }
 
-  const opensAt = new Date(d.opensAt);
-  const closesAt = new Date(d.closesAt);
+  const opensAt = parseWibDateTimeLocal(d.opensAt);
+  const closesAt = parseWibDateTimeLocal(d.closesAt);
   if (closesAt <= opensAt) {
     return { error: "Waktu tutup harus setelah waktu buka" };
   }
