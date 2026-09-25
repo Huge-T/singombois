@@ -18,6 +18,12 @@ async function requireOwnSubmission(submissionId: string) {
     include: { session: { include: { readingText: true, audioMaterial: true } } },
   });
   if (!submission || submission.studentId !== session.user.id) throw new Error("Tidak diizinkan");
+
+  const now = new Date();
+  if (now < submission.session.opensAt || now > submission.session.closesAt) {
+    throw new Error("Sesi sudah tidak bisa dikerjakan (di luar jadwal buka/tutup).");
+  }
+
   return submission;
 }
 

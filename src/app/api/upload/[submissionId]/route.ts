@@ -60,6 +60,11 @@ async function handleUpload(req: NextRequest, ctx: { params: Promise<{ submissio
     return NextResponse.json({ error: "Lembar kerja untuk sesi ini sudah dikumpulkan." }, { status: 409 });
   }
 
+  const now = new Date();
+  if (now < submission.session.opensAt || now > submission.session.closesAt) {
+    return NextResponse.json({ error: "Sesi sudah tidak bisa dikerjakan (di luar jadwal buka/tutup)." }, { status: 403 });
+  }
+
   let formData: FormData;
   try {
     formData = await req.formData();

@@ -31,6 +31,10 @@ export default async function SesiPage({ params }: { params: Promise<{ id: strin
   ) {
     redirect("/siswa");
   }
+  const now = new Date();
+  if (now < literacySession.opensAt || now > literacySession.closesAt) {
+    redirect("/siswa");
+  }
 
   let submission = await prisma.submission.findUnique({
     where: { sessionId_studentId: { sessionId: id, studentId: student.id } },
