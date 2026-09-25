@@ -157,9 +157,13 @@ export function QuizRunner({
                     ? "Gambar dibaca langsung oleh tim ahli, tanpa skor kerapian teknis."
                     : "Tulis jawabanmu di lembar kerja, lalu foto dan unggah di sini."}
                 </p>
+                <p className="hint">
+                  Foto di tempat terang, kamera tegak lurus di atas kertas, seluruh lembar masuk bingkai.
+                </p>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/heic,image/heif"
+                  capture="environment"
                   disabled={photo?.status === "uploading"}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
