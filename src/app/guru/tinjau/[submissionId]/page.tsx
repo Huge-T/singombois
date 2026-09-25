@@ -57,6 +57,32 @@ export default async function TinjauDetailPage({ params }: { params: Promise<{ s
         </span>
       </p>
 
+      {(submission.session.readingTextId || submission.session.audioMaterialId) && (
+        <div className="card" style={{ marginBottom: 16, display: "flex", gap: 24 }}>
+          {submission.session.readingTextId && (
+            <div>
+              <p className="tbl-k" style={{ margin: 0 }}>
+                MEMBACA
+              </p>
+              <p style={{ fontSize: 14 }}>
+                {submission.readingCorrect ?? 0}/{submission.readingTotal ?? 0} benar
+              </p>
+            </div>
+          )}
+          {submission.session.audioMaterialId && (
+            <div>
+              <p className="tbl-k" style={{ margin: 0 }}>
+                MENYIMAK
+              </p>
+              <p style={{ fontSize: 14 }}>
+                {submission.listeningCorrect ?? 0}/{submission.listeningTotal ?? 0} benar · audio diulang{" "}
+                {submission.audioPlays}×
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rev">
         <div className="rev-img">
           {submission.artifacts[0] ? (
