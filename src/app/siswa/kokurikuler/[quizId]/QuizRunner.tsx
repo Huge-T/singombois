@@ -112,25 +112,31 @@ export function QuizRunner({
                 {q.order}. {q.text}
               </strong>
             </p>
-            {q.type === "PILIHAN_GANDA" &&
-              options.map((opt, i) => (
-                <label key={i} className="opt" style={{ display: "block", marginBottom: 4 }}>
-                  <input
-                    type="radio"
-                    name={q.id}
-                    checked={answers[q.id] === OPTION_LETTERS[i]}
-                    onChange={() => setAnswer(q.id, OPTION_LETTERS[i])}
-                  />
-                  {OPTION_LETTERS[i]}. {opt}
-                </label>
-              ))}
-            {q.type === "BENAR_SALAH" &&
-              ["BENAR", "SALAH"].map((v) => (
-                <label key={v} className="opt" style={{ display: "block", marginBottom: 4 }}>
-                  <input type="radio" name={q.id} checked={answers[q.id] === v} onChange={() => setAnswer(q.id, v)} />
-                  {v}
-                </label>
-              ))}
+            {q.type === "PILIHAN_GANDA" && (
+              <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
+                {options.map((opt, i) => (
+                  <label key={i} className="opt">
+                    <input
+                      type="radio"
+                      name={q.id}
+                      checked={answers[q.id] === OPTION_LETTERS[i]}
+                      onChange={() => setAnswer(q.id, OPTION_LETTERS[i])}
+                    />
+                    {OPTION_LETTERS[i]}. {opt}
+                  </label>
+                ))}
+              </div>
+            )}
+            {q.type === "BENAR_SALAH" && (
+              <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
+                {["BENAR", "SALAH"].map((v) => (
+                  <label key={v} className="opt">
+                    <input type="radio" name={q.id} checked={answers[q.id] === v} onChange={() => setAnswer(q.id, v)} />
+                    {v}
+                  </label>
+                ))}
+              </div>
+            )}
             {q.type === "URAIAN" && usesPhotoEssay && (
               <div>
                 <p className="hint">Jenis karya</p>
@@ -160,28 +166,34 @@ export function QuizRunner({
                 <p className="hint">
                   Foto di tempat terang, kamera tegak lurus di atas kertas, seluruh lembar masuk bingkai.
                 </p>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/heic,image/heif"
-                  capture="environment"
-                  disabled={photo?.status === "uploading"}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePhotoSelect(q.id, file);
-                  }}
-                />
+                <label className="btn" style={{ cursor: photo?.status === "uploading" ? "not-allowed" : "pointer" }}>
+                  {photo?.status === "accepted" ? "Ganti foto" : "Pilih atau foto lembar jawaban"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/heic,image/heif"
+                    capture="environment"
+                    disabled={photo?.status === "uploading"}
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handlePhotoSelect(q.id, file);
+                    }}
+                  />
+                </label>
                 {photo?.status === "uploading" && <p className="hint">Mengunggah &amp; menganalisis...</p>}
                 {photo?.status === "accepted" && <div className="notice-box">Foto diterima.</div>}
                 {photo?.status === "rejected" && <div className="error-box">{photo.error}</div>}
               </div>
             )}
             {q.type === "URAIAN" && !usesPhotoEssay && (
-              <textarea
-                rows={4}
-                value={answers[q.id] ?? ""}
-                onChange={(e) => setAnswer(q.id, e.target.value)}
-                placeholder="Tulis jawabanmu..."
-              />
+              <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
+                <textarea
+                  rows={4}
+                  value={answers[q.id] ?? ""}
+                  onChange={(e) => setAnswer(q.id, e.target.value)}
+                  placeholder="Tulis jawabanmu..."
+                />
+              </div>
             )}
           </div>
         );

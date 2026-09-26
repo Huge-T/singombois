@@ -865,6 +865,72 @@ footer.kaki a {
   padding: 1px 7px;
 }
 
+.menu-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.menu-tombol {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.menu-tombol span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--tinta);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.menu-latar {
+  display: none;
+}
+
+/* Di layar sempit (HP), sidebar dasbor jadi laci yang meluncur dari kiri
+   lewat toggle checkbox murni CSS — tidak butuh JS untuk buka/tutup,
+   konsisten dengan gaya situs ini yang minim JS di luar yang perlu. */
+@media (max-width: 880px) {
+  .menu-tombol {
+    display: flex;
+  }
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    position: fixed;
+    top: 61px;
+    left: 0;
+    bottom: 0;
+    width: min(82vw, 300px);
+    z-index: 45;
+    overflow-y: auto;
+    background: var(--kertas-terang);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 4px 0 20px rgba(19, 28, 61, 0.18);
+  }
+  .menu-toggle:checked ~ .menu-latar {
+    display: block;
+    position: fixed;
+    inset: 61px 0 0 0;
+    background: rgba(19, 28, 61, 0.35);
+    z-index: 44;
+  }
+  .menu-toggle:checked ~ .app .side {
+    transform: translateX(0);
+  }
+  .main {
+    padding: 20px 16px;
+  }
+}
+
 .main {
   padding: 30px 34px;
   max-width: 1000px;
@@ -1602,6 +1668,7 @@ footer.kaki a {
   gap: 24px;
 }
 @media (max-width: 900px) {
+  .rev,
   .bk-rev {
     grid-template-columns: 1fr;
   }

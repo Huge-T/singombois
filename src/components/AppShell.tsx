@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 import { SideNavLinks } from "@/components/SideNavLinks";
+import { MobileMenuToggle } from "@/components/MobileMenuToggle";
 import { logoSingoMbois } from "@/content/assets";
 
 export interface NavItem {
@@ -27,6 +28,7 @@ export function AppShell({
   const logo = logoSingoMbois();
   return (
     <div>
+      <MobileMenuToggle />
       <header className="situs">
         <nav className="nav">
           <Link href="/" className="wordmark">
@@ -37,9 +39,15 @@ export function AppShell({
               <span>SMPN 27 Malang</span>
             </span>
           </Link>
+          <label htmlFor="menu-toggle" className="menu-tombol" aria-label="Buka menu navigasi">
+            <span />
+            <span />
+            <span />
+          </label>
           <SignOutButton />
         </nav>
       </header>
+      <label htmlFor="menu-toggle" className="menu-latar" aria-hidden="true" />
       <div className="app">
         <aside className="side">
           <p className="side-k">{sideLabel}</p>
