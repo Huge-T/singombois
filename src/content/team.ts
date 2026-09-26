@@ -93,7 +93,7 @@ export const CONTACTS = {
       url: "https://whatsapp.com/channel/0029VbBeJQkBPzjcRF6NhN1O",
     },
     { label: "Instagram", handle: "@smpn.27malang", url: "https://instagram.com/smpn.27malang" },
-    { label: "YouTube", handle: "@smp27kotamalang50", url: "https://youtube.com/@smp27kotamalang50" },
+    { label: "YouTube", handle: "@smpn27malangmbois", url: "https://youtube.com/@smpn27malangmbois" },
     { label: "Facebook", handle: "smpn27kotamalang", url: "https://facebook.com/smpn27kotamalang" },
     { label: "Situs sekolah", handle: "smpnegeri27malang.sch.id", url: "https://smpnegeri27malang.sch.id" },
   ],
