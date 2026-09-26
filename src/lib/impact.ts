@@ -11,20 +11,23 @@ export interface ImpactStats {
 }
 
 export async function getImpactStats(): Promise<ImpactStats> {
-  const [readings, classGroups, feedbackCount, visitCount] = await Promise.all([
+  const [readings, classGroups, feedbackCount, parentReviewCount, visitCount] = await Promise.all([
     prisma.characterReading.findMany({
       where: { status: "PUBLISHED" },
       select: { submission: { select: { studentId: true } } },
     }),
     prisma.session.groupBy({ by: ["classId"] }),
     prisma.feedback.count(),
+    prisma.parentReview.count(),
     prisma.pageVisit.count(),
   ]);
 
   return {
     studentsServed: new Set(readings.map((r) => r.submission.studentId)).size,
     classesInProgram: classGroups.length,
-    feedbackCount,
+    // "Tanggapan masuk" mencakup angket siswa DAN ulasan orang tua — dua
+    // sumber tanggapan yang beda modelnya tapi sama-sama masuk hitungan ini.
+    feedbackCount: feedbackCount + parentReviewCount,
     visitCount,
   };
 }
