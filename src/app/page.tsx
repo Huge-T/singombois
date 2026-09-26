@@ -9,7 +9,7 @@ import { CONTACTS } from "@/content/team";
 import { dokumen, giatCards } from "@/content/assets";
 import {
   getImpactStats,
-  getWeeklyVisits,
+  getDailyVisits,
   getClarityByClass,
   getApprovedTestimonials,
 } from "@/lib/impact";
@@ -40,9 +40,9 @@ const orgJsonLd = {
 export default async function HomePage() {
   const berkas = dokumen();
   const giat = giatCards();
-  const [stats, weeklyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
+  const [stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
     getImpactStats(),
-    getWeeklyVisits(),
+    getDailyVisits(),
     getClarityByClass(),
     getApprovedTestimonials(),
     getApprovedParentReviews(),
@@ -367,13 +367,13 @@ export default async function HomePage() {
 
               <div className="grafik-kisi">
                 <div className="kartu">
-                  <h3 style={{ marginBottom: 14 }}>Kunjungan per minggu</h3>
+                  <h3 style={{ marginBottom: 14 }}>Kunjungan per hari</h3>
                   <BarChart
-                    title="Kunjungan situs per minggu, delapan minggu terakhir"
-                    data={weeklyVisits.map((w) => ({
-                      label: w.label,
-                      value: w.count,
-                      detail: `Pekan mulai ${w.label}: ${w.count} kunjungan`,
+                    title="Kunjungan situs per hari, empat belas hari terakhir"
+                    data={dailyVisits.map((d) => ({
+                      label: d.label,
+                      value: d.count,
+                      detail: `${d.label}: ${d.count} kunjungan`,
                     }))}
                   />
                 </div>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withRetry } from "@/lib/dbRetry";
+import { wibMidnight } from "@/lib/wibTime";
 
 /** Data untuk bagian Kemanfaatan di beranda. Semua angka dihitung live dari
  *  database — tidak ada angka yang diketik manual.
@@ -41,14 +42,19 @@ export async function getImpactStats(): Promise<ImpactStats> {
   };
 }
 
-export interface WeekBucket {
-  label: string; // tanggal awal minggu, mis. "25 Mei"
+export interface DayBucket {
+  label: string; // tanggal kalender WIB hari itu, mis. "25 Mei"
   count: number;
 }
 
-/** Kunjungan per minggu: 8 ember 7-harian, terbaru di kanan. */
-export async function getWeeklyVisits(weeks = 8): Promise<WeekBucket[]> {
-  const since = new Date(Date.now() - weeks * 7 * 24 * 3600 * 1000);
+/** Kunjungan per hari kalender WIB (bukan jendela geser 24 jam server) — hari
+ *  ini (bucket terakhir) selalu tanggal WIB saat ini, jadi grafik terlihat
+ *  maju tiap hari alih-alih "macet" di satu tanggal. Sebelumnya dihitung per
+ *  minggu dengan label = awal jendela, kelihatan seperti tidak update karena
+ *  labelnya tidak berubah selama 7 hari penuh. */
+export async function getDailyVisits(days = 14): Promise<DayBucket[]> {
+  const todayWib = wibMidnight(new Date());
+  const since = new Date(todayWib.getTime() - (days - 1) * 24 * 3600 * 1000);
   const visits = await withRetry(() =>
     prisma.pageVisit.findMany({
       where: { createdAt: { gte: since } },
@@ -56,14 +62,13 @@ export async function getWeeklyVisits(weeks = 8): Promise<WeekBucket[]> {
     })
   );
 
-  const now = Date.now();
-  const buckets: WeekBucket[] = [];
-  for (let i = weeks - 1; i >= 0; i--) {
-    const start = new Date(now - (i + 1) * 7 * 24 * 3600 * 1000);
-    const end = new Date(now - i * 7 * 24 * 3600 * 1000);
-    const count = visits.filter((v) => v.createdAt >= start && v.createdAt < end).length;
+  const buckets: DayBucket[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const dayStart = new Date(todayWib.getTime() - i * 24 * 3600 * 1000);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 3600 * 1000);
+    const count = visits.filter((v) => v.createdAt >= dayStart && v.createdAt < dayEnd).length;
     buckets.push({
-      label: start.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+      label: dayStart.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" }),
       count,
     });
   }
