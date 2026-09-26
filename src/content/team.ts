@@ -13,33 +13,46 @@ export const TEAM = {
   divisions: [
     {
       name: "Tim Inti SINGO MBOIS",
+      slug: "tim-inti",
       role: "Pengarah program, penyusun kebijakan, dan penanggung jawab inovasi.",
-      members: [] as string[],
+      members: ["A. Rizky Heris T.", "Lulus Agisnia B.", "Moh. Samsudi", "Suyati", "Angga Prasetya N."],
     },
     {
       name: "Tim IT",
+      slug: "tim-it",
       role: "Pengelolaan sistem, perangkat, dan infrastruktur digital program.",
-      members: [] as string[],
+      members: ["Sugeng Triyono", "Harianto", "Imam Akbarr D."],
     },
     {
       name: "Tim Analisis",
+      slug: "tim-analisis",
       role: "Analisis lembar kerja siswa dan penilaian kualitas tulisan tangan.",
-      members: [] as string[],
+      members: ["Suradji", "Iswarianti", "Laily Isnaini", "Amelia Rohali", "Dina Elisa", "M. Muslikh"],
     },
     {
       name: "Tim Literasi",
+      slug: "tim-literasi",
       role: "Penyusunan materi baca-simak-tulis dan pelaksanaan sesi literasi mingguan.",
-      members: [] as string[],
+      members: [
+        "M. Kholil",
+        "Septiningrum",
+        "Ambar Ul Husna",
+        "Arif Irfan Fauzi",
+        "Ririn Nusantari",
+        "Iyus Noviriyanto",
+      ],
     },
     {
       name: "Tim Humas",
+      slug: "tim-humas",
       role: "Sosialisasi ke siswa, orang tua, dan sekolah mitra.",
-      members: [] as string[],
+      members: ["Titik Trisnawati", "Moch. Shaleh", "Suyanto", "Heppy Ratih W.", "Nurrokhman W."],
     },
     {
       name: "Tim Perlengkapan",
+      slug: "tim-perlengkapan",
       role: "Penyiapan lembar kerja, pencetakan, dan logistik kegiatan.",
-      members: [] as string[],
+      members: ["Sastra", "Yalim", "Budi Setiyawan", "Sultan", "Fauzi"],
     },
   ],
   researchers: [

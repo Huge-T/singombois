@@ -2,6 +2,7 @@ import { PublicNav } from "@/components/PublicNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { TEAM, DOWNLOADS } from "@/content/team";
+import { assetUrl } from "@/content/assets";
 
 export const metadata = {
   title: "Tim",
@@ -34,17 +35,28 @@ export default function TimPage() {
             <div className="isi">
               <p className="penunjuk">Enam divisi pelaksana</p>
               <div className="kisi">
-                {TEAM.divisions.map((d) => (
-                  <div className="kartu" key={d.name}>
-                    <h3>{d.name}</h3>
-                    <p>{d.role}</p>
-                    {d.members.length > 0 && (
-                      <p style={{ fontSize: 12.5, color: "var(--tinta-lembut)", marginTop: 10 }}>
-                        {d.members.join(" · ")}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                {TEAM.divisions.map((d) => {
+                  const foto = assetUrl(`foto/tim/${d.slug}.jpg`);
+                  return (
+                    <div className="kartu" key={d.name}>
+                      {foto && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={foto}
+                          alt={`Foto ${d.name}`}
+                          style={{ width: "100%", borderRadius: 4, marginBottom: 14 }}
+                        />
+                      )}
+                      <h3>{d.name}</h3>
+                      <p>{d.role}</p>
+                      {d.members.length > 0 && (
+                        <p style={{ fontSize: 12.5, color: "var(--tinta-lembut)", marginTop: 10 }}>
+                          {d.members.join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </ScrollReveal>
