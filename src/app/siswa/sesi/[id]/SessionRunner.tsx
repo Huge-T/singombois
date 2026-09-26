@@ -195,7 +195,15 @@ export function SessionRunner({
   const [soalAudioPlays, setSoalAudioPlays] = useState(0);
   const [showSoalText, setShowSoalText] = useState(false);
   const soalAudioRef = useRef<HTMLAudioElement>(null);
+  const lastSoalSeekedAtRef = useRef(0);
+  function handleSoalAudioSeeked() {
+    lastSoalSeekedAtRef.current = Date.now();
+  }
   function handleSoalAudioPlay() {
+    // Sama seperti audio menyimak: geser slider (mis. di HP) bisa memicu
+    // pause+play otomatis dari browser saat jari dilepas — jangan hitung itu
+    // sebagai jatah putar baru, atau tombol putar berikutnya jadi macet.
+    if (Date.now() - lastSoalSeekedAtRef.current < 500) return;
     if (soalAudioPlays >= SOAL_AUDIO_MAX_PLAYS) {
       soalAudioRef.current?.pause();
       return;
@@ -244,6 +252,12 @@ export function SessionRunner({
   // menekan putar untuk jatah berikutnya).
   const audioIsPlayingRef = useRef(false);
   const listeningMaxTimeRef = useRef(0);
+  // Menggeser slider audio (terutama di HP) sering memicu browser mem-pause
+  // lalu otomatis play lagi begitu jarinya dilepas — itu BUKAN siswa sengaja
+  // menekan tombol putar baru, tapi event "play"-nya identik. Tanpa penanda
+  // ini, tiap geseran slider ikut memakan jatah putar sampai habis, lalu
+  // tombol putar berikutnya langsung di-pause lagi (macet).
+  const lastSeekedAtRef = useRef(0);
 
   function handleAudioTimeUpdate() {
     if (audioRef.current && audioRef.current.currentTime > listeningMaxTimeRef.current) {
@@ -258,12 +272,21 @@ export function SessionRunner({
     }
   }
 
+  function handleAudioSeeked() {
+    lastSeekedAtRef.current = Date.now();
+  }
+
   function handleAudioPause() {
     audioIsPlayingRef.current = false;
   }
 
   function handleAudioPlay() {
     if (!listening) return;
+    const isSeekResume = Date.now() - lastSeekedAtRef.current < 500;
+    if (isSeekResume) {
+      audioIsPlayingRef.current = true;
+      return;
+    }
     if (audioPlays >= listening.maxPlays) {
       audioRef.current?.pause();
       return;
@@ -457,6 +480,7 @@ export function SessionRunner({
               onPause={handleAudioPause}
               onTimeUpdate={handleAudioTimeUpdate}
               onSeeking={handleAudioSeeking}
+              onSeeked={handleAudioSeeked}
               style={{ width: "100%", marginBottom: 20 }}
             />
           ) : (
@@ -541,6 +565,7 @@ export function SessionRunner({
                 controls
                 src={listening.questionsAudioUrl}
                 onPlay={handleSoalAudioPlay}
+                onSeeked={handleSoalAudioSeeked}
                 style={{ width: "100%", marginBottom: 16 }}
               />
               <button
