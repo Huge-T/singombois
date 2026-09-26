@@ -493,6 +493,7 @@ model ContactLead {
   contactName String
   email       String
   message     String
+  handled     Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
 

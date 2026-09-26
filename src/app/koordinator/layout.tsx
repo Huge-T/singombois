@@ -17,15 +17,16 @@ export default async function KoordinatorLayout({ children }: { children: React.
     ? await prisma.staffUser.findUnique({ where: { id: session.user.id } })
     : null;
 
-  const [pendingConsent, pendingFeedback, pendingParentReviews] = staff
+  const [pendingConsent, pendingFeedback, pendingParentReviews, pendingLeads] = staff
     ? await Promise.all([
         prisma.student.count({ where: { schoolId: staff.schoolId, consentStatus: "PENDING" } }),
         prisma.feedback.count({
           where: { student: { schoolId: staff.schoolId }, approved: false, displayConsent: { not: "TIDAK" } },
         }),
         prisma.parentReview.count({ where: { approved: false } }),
+        prisma.contactLead.count({ where: { handled: false } }),
       ])
-    : [0, 0, 0];
+    : [0, 0, 0, 0];
 
   const navItems: NavItem[] = [
     { href: "/koordinator", label: "Ringkasan" },
@@ -36,6 +37,7 @@ export default async function KoordinatorLayout({ children }: { children: React.
     { href: "/koordinator/siswa", label: "Kelas & siswa", badge: pendingConsent || undefined },
     { href: "/koordinator/staf", label: "Kelola staf" },
     { href: "/koordinator/tanggapan", label: "Ulasan", badge: pendingFeedback + pendingParentReviews || undefined },
+    { href: "/koordinator/sekolah-lain", label: "Sekolah lain", badge: pendingLeads || undefined },
     { href: "/koordinator/log-akses", label: "Log akses" },
   ];
 
