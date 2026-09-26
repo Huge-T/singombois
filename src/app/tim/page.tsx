@@ -1,8 +1,8 @@
 import { PublicNav } from "@/components/PublicNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { TEAM, DOWNLOADS } from "@/content/team";
-import { assetUrl } from "@/content/assets";
+import { TEAM } from "@/content/team";
+import { assetUrl, dokumen } from "@/content/assets";
 
 export const metadata = {
   title: "Tim",
@@ -45,6 +45,7 @@ function MitraSlider({ items, reverse }: { items: MitraEntry[]; reverse?: boolea
 }
 
 export default function TimPage() {
+  const berkas = dokumen();
   return (
     <div>
       <PublicNav active="/tim" />
@@ -145,13 +146,13 @@ export default function TimPage() {
               <p className="penunjuk">Unduhan</p>
               <h2 className="judul-bagian">SK &amp; Buku Panduan Teknis</h2>
               <div className="berkas">
-                {DOWNLOADS.map((d) => (
-                  <a key={d.title} href={d.url} target="_blank" rel="noreferrer">
+                {berkas.map((d) => (
+                  <a key={d.nama} href={d.url} target={d.lokal ? undefined : "_blank"} rel="noreferrer">
                     <div>
-                      <span className="nama">{d.title}</span>
-                      <span className="ket">{d.description}</span>
+                      <span className="nama">{d.nama}</span>
+                      <span className="ket">{d.ket}</span>
                     </div>
-                    <span className="jenis">{d.type}</span>
+                    <span className="jenis">{d.jenis}</span>
                   </a>
                 ))}
               </div>

@@ -95,29 +95,6 @@ export const TEAM = {
   },
 };
 
-/** Downloads migrated from the old Google Sites. Host the files locally at
- *  public/dokumen/ before launch; until then these link to the old site. */
-export const DOWNLOADS = [
-  {
-    title: "SK SINGO MBOIS SMPN 27",
-    type: "PDF",
-    description: "Surat Keputusan pembentukan tim pelaksana inovasi SINGO MBOIS.",
-    url: "https://sites.google.com/view/singombois",
-  },
-  {
-    title: "Buku Panduan Teknis SINGO MBOIS",
-    type: "PDF",
-    description: "Panduan lengkap pelaksanaan program untuk guru dan sekolah mitra.",
-    url: "https://sites.google.com/view/singombois",
-  },
-  {
-    title: "Video Tutorial",
-    type: "MP4",
-    description: "Tutorial penggunaan layanan SINGO MBOIS.",
-    url: "https://sites.google.com/view/singombois",
-  },
-];
-
 export const CONTACTS = {
   whatsapp: [
     { label: "WhatsApp Tim SINGO MBOIS", number: "+62 851-0007-9717", url: "https://wa.me/6285100079717" },
