@@ -305,11 +305,8 @@ summary.btn::-webkit-details-marker {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--pena-merah);
-  margin-bottom: 28px;
-}
-.alis span {
   color: var(--tinta-lembut);
+  margin-bottom: 28px;
 }
 .penunjuk {
   font-size: 11px;
