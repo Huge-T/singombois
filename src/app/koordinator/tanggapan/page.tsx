@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ApproveToggle } from "./ApproveToggle";
+import { ParentReviewToggle } from "./ParentReviewToggle";
 
 const AWARENESS_LABEL: Record<string, string> = {
   TAHU: "Sudah tahu grafologi",
@@ -29,6 +30,9 @@ export default async function TanggapanPage() {
       ? (feedbacks.reduce((s, f) => s + f.clarityScore, 0) / feedbacks.length).toFixed(1)
       : "-";
   const shown = feedbacks.filter((f) => f.approved).length;
+
+  const parentReviews = await prisma.parentReview.findMany({ orderBy: { createdAt: "desc" } });
+  const pendingParentReviews = parentReviews.filter((r) => !r.approved).length;
 
   return (
     <div>
@@ -81,6 +85,34 @@ export default async function TanggapanPage() {
           )}
 
           <ApproveToggle feedbackId={f.id} approved={f.approved} consentAllows={f.displayConsent !== "TIDAK"} />
+        </div>
+      ))}
+
+      <h2 className="h2" style={{ marginTop: 40 }}>
+        Ulasan orang tua {pendingParentReviews > 0 && <span className="pill pill-mark">{pendingParentReviews} MENUNGGU</span>}
+      </h2>
+      <p className="sub">
+        Ulasan publik dari orang tua/wali murid (tanpa login) di beranda. Wajib disetujui dulu
+        sebelum tayang — hapus kalau spam/tidak relevan.
+      </p>
+
+      {parentReviews.length === 0 && (
+        <p style={{ fontSize: 14, color: "var(--tinta-lembut)" }}>Belum ada ulasan orang tua.</p>
+      )}
+
+      {parentReviews.map((r) => (
+        <div className="card" key={r.id} style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap", marginBottom: 8 }}>
+            <b style={{ fontSize: 14.5 }}>{r.name}</b>
+            <span className="pill pill-singo">
+              {"★".repeat(r.rating)}
+              {"☆".repeat(5 - r.rating)}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--tinta-lembut)" }}>{r.createdAt.toLocaleDateString("id-ID")}</span>
+            {r.approved && <span className="pill pill-ok">TAYANG</span>}
+          </div>
+          <p style={{ fontSize: 14, lineHeight: 1.65, marginBottom: 8 }}>{r.comment}</p>
+          <ParentReviewToggle reviewId={r.id} approved={r.approved} />
         </div>
       ))}
     </div>

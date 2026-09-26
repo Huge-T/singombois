@@ -40,3 +40,46 @@ export async function setFeedbackApproved(feedbackId: string, approved: boolean)
   revalidatePath("/koordinator/tanggapan");
   revalidatePath("/");
 }
+
+export async function setParentReviewApproved(reviewId: string, approved: boolean) {
+  const session = await auth();
+  assertCoordinator(session?.user.role);
+
+  const review = await prisma.parentReview.findUnique({ where: { id: reviewId } });
+  if (!review) throw new Error("Ulasan tidak ditemukan");
+
+  await prisma.parentReview.update({ where: { id: reviewId }, data: { approved } });
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session!.user.id,
+      actorType: "staff",
+      action: approved ? "APPROVE_PARENT_REVIEW" : "UNAPPROVE_PARENT_REVIEW",
+      entity: "ParentReview",
+      entityId: reviewId,
+    },
+  });
+
+  revalidatePath("/koordinator/tanggapan");
+  revalidatePath("/");
+}
+
+export async function deleteParentReview(reviewId: string) {
+  const session = await auth();
+  assertCoordinator(session?.user.role);
+
+  await prisma.parentReview.delete({ where: { id: reviewId } });
+
+  await prisma.auditLog.create({
+    data: {
+      userId: session!.user.id,
+      actorType: "staff",
+      action: "DELETE_PARENT_REVIEW",
+      entity: "ParentReview",
+      entityId: reviewId,
+    },
+  });
+
+  revalidatePath("/koordinator/tanggapan");
+  revalidatePath("/");
+}

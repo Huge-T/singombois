@@ -13,6 +13,8 @@ import {
   getClarityByClass,
   getApprovedTestimonials,
 } from "@/lib/impact";
+import { getApprovedParentReviews, getParentReviewStats } from "@/lib/parentReview";
+import { ParentReviewForm } from "@/components/ParentReviewForm";
 
 const orgJsonLd = {
   "@context": "https://schema.org",
@@ -38,11 +40,13 @@ const orgJsonLd = {
 export default async function HomePage() {
   const berkas = dokumen();
   const giat = giatCards();
-  const [stats, weeklyVisits, clarityByClass, testimonials] = await Promise.all([
+  const [stats, weeklyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
     getImpactStats(),
     getWeeklyVisits(),
     getClarityByClass(),
     getApprovedTestimonials(),
+    getApprovedParentReviews(),
+    getParentReviewStats(),
   ]);
 
   return (
@@ -436,6 +440,51 @@ export default async function HomePage() {
                 <Link className="tombol tombol-utama tombol-kecil" href="/masuk">
                   Masuk dan isi angket
                 </Link>
+              </div>
+            </div>
+          </ScrollReveal>
+        </section>
+
+        {/* ULASAN ORANG TUA */}
+        <section className="bagian" id="ulasan-orang-tua">
+          <ScrollReveal>
+            <div className="isi">
+              <p className="penunjuk">Ulasan orang tua</p>
+              <h2 className="judul-bagian">
+                Apa kata orang tua
+                <br />
+                &amp; wali murid?
+              </h2>
+              <p className="pengantar">
+                Orang tua/wali murid siswa yang ikut SINGO MBOIS boleh memberi ulasan langsung di
+                sini, tanpa perlu akun. Ulasan yang masuk dibaca tim dulu sebelum tayang.
+              </p>
+
+              {parentReviewStats.count > 0 && (
+                <p style={{ fontSize: 14, marginBottom: 20 }}>
+                  <strong>{parentReviewStats.average?.toFixed(1)}</strong> dari {parentReviewStats.count} ulasan
+                </p>
+              )}
+
+              {parentReviews.length > 0 ? (
+                <div className="testimoni-kisi">
+                  {parentReviews.map((r, i) => (
+                    <figure className={`testimoni ${i % 2 === 1 ? "miring-kanan" : "miring-kiri"}`} key={r.id}>
+                      <p style={{ color: "var(--singo)", marginBottom: 6 }}>
+                        {"★".repeat(r.rating)}
+                        <span style={{ color: "var(--garis)" }}>{"★".repeat(5 - r.rating)}</span>
+                      </p>
+                      <blockquote>{r.comment}</blockquote>
+                      <figcaption>{r.name}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              ) : (
+                <div className="testimoni-kosong">Ulasan orang tua akan tampil di sini setelah disetujui tim.</div>
+              )}
+
+              <div style={{ marginTop: 28 }}>
+                <ParentReviewForm />
               </div>
             </div>
           </ScrollReveal>

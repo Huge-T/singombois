@@ -512,6 +512,20 @@ model Feedback {
   @@unique([studentId, submissionId])
 }
 
+// Ulasan publik dari orang tua/wali murid — beda dari Feedback (siswa, perlu
+// login & terikat submission). Orang tua tidak punya akun sama sekali di
+// sistem ini, jadi formulirnya publik tanpa login (lihat halaman beranda),
+// dipertahankan aman lewat moderasi wajib sebelum tayang (approved=false
+// default) — mirror pola approved di Feedback.
+model ParentReview {
+  id        String   @id @default(cuid())
+  name      String
+  rating    Int // 1-5
+  comment   String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 // ---------- Kokurikuler: soal + nilai + analisis kepribadian ----------
 // Subsistem terpisah dari Session/Submission literasi (yang terikat lembar
 // cetak & foto tulisan tangan) — kuis kokurikuler dikerjakan langsung di
@@ -528,11 +542,11 @@ enum KokurikulerQuestionType {
 }
 
 model KokurikulerQuiz {
-  id                  String            @id @default(cuid())
+  id                  String             @id @default(cuid())
   classId             String
-  class               Class             @relation(fields: [classId], references: [id])
+  class               Class              @relation(fields: [classId], references: [id])
   createdById         String
-  createdBy           StaffUser         @relation(fields: [createdById], references: [id])
+  createdBy           StaffUser          @relation(fields: [createdById], references: [id])
   label               String
   tema                String?
   // Dipakai siswa mencetak & menulis jawaban uraian (kalau ada) supaya foto
@@ -544,9 +558,9 @@ model KokurikulerQuiz {
   worksheetTemplate   WorksheetTemplate? @relation(fields: [worksheetTemplateId], references: [id])
   opensAt             DateTime
   closesAt            DateTime
-  status              SessionStatus     @default(DRAFT) // DRAFT = disusun; OPEN = siswa bisa mengerjakan; CLOSED
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  status              SessionStatus      @default(DRAFT) // DRAFT = disusun; OPEN = siswa bisa mengerjakan; CLOSED
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   questions        KokurikulerQuestion[]
   attempts         KokurikulerAttempt[]

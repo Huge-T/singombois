@@ -1,46 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { submitAngket, type AngketFormState } from "./actions";
+import { StarRatingInput } from "@/components/StarRatingInput";
 
 const initialState: AngketFormState = {};
-
-function StarRating({ initial }: { initial?: number }) {
-  const [rating, setRating] = useState(initial ?? 0);
-  const [hover, setHover] = useState(0);
-  const shown = hover || rating;
-
-  return (
-    <div>
-      <div role="radiogroup" aria-label="Rating 1 sampai 5 bintang" style={{ display: "flex", gap: 4 }}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={rating === n}
-            aria-label={`${n} bintang`}
-            onClick={() => setRating(n)}
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 2,
-              fontSize: 34,
-              lineHeight: 1,
-              color: shown >= n ? "var(--singo)" : "var(--garis)",
-            }}
-          >
-            ★
-          </button>
-        ))}
-      </div>
-      <input type="hidden" name="clarityScore" value={rating} />
-    </div>
-  );
-}
 
 export function AngketForm({
   sessionId,
@@ -64,7 +28,7 @@ export function AngketForm({
 
       <div className="field">
         <label>Beri rating pengalamanmu ikut SINGO MBOIS</label>
-        <StarRating initial={initial?.clarityScore} />
+        <StarRatingInput name="clarityScore" initial={initial?.clarityScore} />
         <p className="hint">1 bintang = kurang membantu · 5 bintang = sangat membantu</p>
       </div>
 
