@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/dbRetry";
 
 export interface ParentReviewPublic {
   id: string;
@@ -14,19 +15,23 @@ export interface ParentReviewStats {
 }
 
 export async function getApprovedParentReviews(limit = 6): Promise<ParentReviewPublic[]> {
-  return prisma.parentReview.findMany({
-    where: { approved: true },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    select: { id: true, name: true, rating: true, comment: true, createdAt: true },
-  });
+  return withRetry(() =>
+    prisma.parentReview.findMany({
+      where: { approved: true },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: { id: true, name: true, rating: true, comment: true, createdAt: true },
+    })
+  );
 }
 
 export async function getParentReviewStats(): Promise<ParentReviewStats> {
-  const agg = await prisma.parentReview.aggregate({
-    where: { approved: true },
-    _count: true,
-    _avg: { rating: true },
-  });
+  const agg = await withRetry(() =>
+    prisma.parentReview.aggregate({
+      where: { approved: true },
+      _count: true,
+      _avg: { rating: true },
+    })
+  );
   return { count: agg._count, average: agg._avg.rating };
 }

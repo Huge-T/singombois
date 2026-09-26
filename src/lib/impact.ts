@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { withRetry } from "@/lib/dbRetry";
 
 /** Data untuk bagian Kemanfaatan di beranda. Semua angka dihitung live dari
- *  database — tidak ada angka yang diketik manual. */
+ *  database — tidak ada angka yang diketik manual.
+ *
+ *  Beranda publik ini dilihat siapa saja lewat serverless function yang
+ *  sering cold-start (koneksi Neon baru tiap kali), beda dari script
+ *  diagnostik lokal yang pakai satu koneksi hangat berulang — makanya
+ *  butuh withRetry di sini padahal query-nya sendiri sudah benar (terbukti
+ *  konsisten kalau dites lewat koneksi yang sama berkali-kali). */
 
 export interface ImpactStats {
   studentsServed: number; // distinct siswa dengan pembacaan karakter terbit
@@ -11,16 +18,18 @@ export interface ImpactStats {
 }
 
 export async function getImpactStats(): Promise<ImpactStats> {
-  const [readings, classGroups, feedbackCount, parentReviewCount, visitCount] = await Promise.all([
-    prisma.characterReading.findMany({
-      where: { status: "PUBLISHED" },
-      select: { submission: { select: { studentId: true } } },
-    }),
-    prisma.session.groupBy({ by: ["classId"] }),
-    prisma.feedback.count(),
-    prisma.parentReview.count(),
-    prisma.pageVisit.count(),
-  ]);
+  const [readings, classGroups, feedbackCount, parentReviewCount, visitCount] = await withRetry(() =>
+    Promise.all([
+      prisma.characterReading.findMany({
+        where: { status: "PUBLISHED" },
+        select: { submission: { select: { studentId: true } } },
+      }),
+      prisma.session.groupBy({ by: ["classId"] }),
+      prisma.feedback.count(),
+      prisma.parentReview.count(),
+      prisma.pageVisit.count(),
+    ])
+  );
 
   return {
     studentsServed: new Set(readings.map((r) => r.submission.studentId)).size,
@@ -40,10 +49,12 @@ export interface WeekBucket {
 /** Kunjungan per minggu: 8 ember 7-harian, terbaru di kanan. */
 export async function getWeeklyVisits(weeks = 8): Promise<WeekBucket[]> {
   const since = new Date(Date.now() - weeks * 7 * 24 * 3600 * 1000);
-  const visits = await prisma.pageVisit.findMany({
-    where: { createdAt: { gte: since } },
-    select: { createdAt: true },
-  });
+  const visits = await withRetry(() =>
+    prisma.pageVisit.findMany({
+      where: { createdAt: { gte: since } },
+      select: { createdAt: true },
+    })
+  );
 
   const now = Date.now();
   const buckets: WeekBucket[] = [];
@@ -68,9 +79,11 @@ export interface ClassClarity {
 /** Rata-rata skor "paham cara belajar" per kelas. Kelas dengan < minN tanggapan
  *  disembunyikan supaya jawaban individu tidak bisa ditebak dari rata-ratanya. */
 export async function getClarityByClass(minN = 3): Promise<ClassClarity[]> {
-  const feedbacks = await prisma.feedback.findMany({
-    select: { clarityScore: true, student: { select: { class: { select: { name: true } } } } },
-  });
+  const feedbacks = await withRetry(() =>
+    prisma.feedback.findMany({
+      select: { clarityScore: true, student: { select: { class: { select: { name: true } } } } },
+    })
+  );
 
   const byClass = new Map<string, number[]>();
   for (const f of feedbacks) {
@@ -96,12 +109,14 @@ export interface PublicTestimonial {
 }
 
 export async function getApprovedTestimonials(limit = 6): Promise<PublicTestimonial[]> {
-  const feedbacks = await prisma.feedback.findMany({
-    where: { approved: true, displayConsent: { not: "TIDAK" } },
-    include: { student: { include: { class: true } } },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+  const feedbacks = await withRetry(() =>
+    prisma.feedback.findMany({
+      where: { approved: true, displayConsent: { not: "TIDAK" } },
+      include: { student: { include: { class: true } } },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    })
+  );
 
   return feedbacks.map((f) => ({
     id: f.id,
