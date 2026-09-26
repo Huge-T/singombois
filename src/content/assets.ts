@@ -62,19 +62,3 @@ export function dokumen() {
     },
   ];
 }
-
-/** Kartu giat + slot fotonya (foto muncul otomatis begitu file diunggah). */
-export function giatCards() {
-  const items = [
-    { slug: "sosialisasi", label: "sosialisasi", judul: "Sosialisasi SINGO MBOIS kepada siswa" },
-    { slug: "tes-awal", label: "tes awal", judul: "Tes awal kegiatan SINGO MBOIS" },
-    { slug: "pendampingan-tes-awal", label: "tes awal", judul: "Pendampingan tes awal SINGO MBOIS" },
-    { slug: "menyimak", label: "literasi", judul: "Kegiatan menyimak literasi" },
-    { slug: "literasi-vii-c", label: "literasi", judul: "Kegiatan literasi kelas VII-C" },
-    { slug: "literasi-ix-c", label: "literasi", judul: "Kegiatan literasi kelas IX-C" },
-  ];
-  return items.map((it) => ({
-    ...it,
-    foto: publicAsset(`foto/giat/${it.slug}.jpg`) ?? publicAsset(`foto/giat/${it.slug}.png`),
-  }));
-}

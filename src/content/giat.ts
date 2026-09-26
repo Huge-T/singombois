@@ -27,11 +27,4 @@ export const GIAT = {
         "Lembar kerja siswa dianalisis kualitas tulisannya (keterbacaan, kerapian, konsistensi) lalu ditinjau guru sebelum hasilnya disampaikan ke siswa.",
     },
   ],
-  activities: [
-    "Kegiatan literasi kelas VII-C",
-    "Kegiatan literasi kelas IX-C",
-    "Uji coba awal SINGO MBOIS",
-    "Sesi menyimak (listening comprehension)",
-    "Sosialisasi SINGO MBOIS ke siswa",
-  ],
 };

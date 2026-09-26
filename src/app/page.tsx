@@ -6,7 +6,9 @@ import { DemoKemiringan } from "@/components/DemoKemiringan";
 import { BarChart } from "@/components/BarChart";
 import { StatCounter } from "@/components/StatCounter";
 import { CONTACTS } from "@/content/team";
-import { dokumen, giatCards } from "@/content/assets";
+import { dokumen } from "@/content/assets";
+import { ActivityBrowser } from "@/components/ActivityBrowser";
+import { getRecentActivities } from "@/lib/activities";
 import {
   getImpactStats,
   getDailyVisits,
@@ -39,8 +41,8 @@ const orgJsonLd = {
 
 export default async function HomePage() {
   const berkas = dokumen();
-  const giat = giatCards();
-  const [stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
+  const [giat, stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
+    getRecentActivities(),
     getImpactStats(),
     getDailyVisits(),
     getClarityByClass(),
@@ -306,18 +308,12 @@ export default async function HomePage() {
               <p className="penunjuk">Giat</p>
               <h2 className="judul-bagian">Yang sudah berjalan</h2>
               <p className="pengantar">Catatan kegiatan SINGO MBOIS di lingkungan sekolah.</p>
-              <div className="giat">
-                {giat.map((g) => (
-                  <div key={g.slug}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {g.foto && <img src={g.foto} alt={g.judul} />}
-                    <div className="giat-teks">
-                      <small>{g.label}</small>
-                      {g.judul}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ActivityBrowser activities={giat} showTabs={false} />
+              <p style={{ marginTop: 20 }}>
+                <Link href="/giat" className="tombol tombol-kedua tombol-kecil">
+                  Lihat semua kegiatan
+                </Link>
+              </p>
             </div>
           </ScrollReveal>
         </section>

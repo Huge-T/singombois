@@ -684,7 +684,9 @@ section.bagian {
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 14px;
 }
-.giat > div {
+.giat > div,
+.giat > button {
+  display: block;
   background: var(--kertas-terang);
   border: 1px solid var(--garis);
   padding: 0;
@@ -692,6 +694,18 @@ section.bagian {
   font-size: 15px;
   font-weight: 500;
   overflow: hidden;
+}
+.giat > button {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.giat > button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--singo);
 }
 .giat .giat-teks {
   padding: 18px 18px 20px;
@@ -710,6 +724,94 @@ section.bagian {
   color: var(--pena-merah);
   font-weight: 400;
   margin-bottom: 6px;
+}
+.giat-kosong {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-bottom: 1px solid var(--garis);
+  background: var(--kertas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 14px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--tinta-lembut);
+}
+
+/* Tab tahun di atas kisi kartu giat */
+.tahun-tab {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.tahun-tab button {
+  font-family: var(--data);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 99px;
+  border: 1.5px solid var(--tinta);
+  background: transparent;
+  color: var(--tinta);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tahun-tab button.on {
+  background: var(--tinta);
+  color: var(--kertas-terang);
+}
+
+/* Dialog detail galeri foto kegiatan (native <dialog>) */
+.giat-dialog {
+  width: min(680px, 92vw);
+  max-height: 84vh;
+  border: 1.5px solid var(--tinta);
+  border-radius: 3px;
+  padding: 26px 28px;
+  background: var(--kertas-terang);
+  box-shadow: 8px 8px 0 var(--singo);
+}
+.giat-dialog::backdrop {
+  background: rgba(19, 28, 61, 0.55);
+}
+.giat-dialog-tutup {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--garis);
+  background: var(--kertas);
+  color: var(--tinta);
+  font-size: 16px;
+  cursor: pointer;
+}
+.giat-dialog h3 {
+  font-family: var(--disp);
+  font-size: 21px;
+  margin: 4px 0 16px;
+  padding-right: 30px;
+}
+.giat-galeri {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.giat-galeri img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid var(--garis);
+}
+@media (max-width: 640px) {
+  .giat-dialog {
+    padding: 20px;
+  }
 }
 
 /* ---------- kontak ---------- */

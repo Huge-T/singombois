@@ -44,6 +44,7 @@ model School {
   exerciseModules    ExerciseModule[]
   indicatorSnapshots IndicatorSnapshot[]
   storyPrompts       StoryPrompt[]
+  activities         Activity[]
 }
 
 model AcademicYear {
@@ -260,6 +261,30 @@ model StoryPrompt {
   createdAt   DateTime  @default(now())
 
   sessions Session[]
+}
+
+/** Kartu dokumentasi kegiatan di halaman publik /giat, dikelola koordinator
+ *  lewat /koordinator/kegiatan (menggantikan daftar statis di content/giat.ts). */
+model Activity {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  title     String
+  category  String // label bebas: "sosialisasi", "tes awal", "literasi", dst.
+  year      Int
+  createdAt DateTime @default(now())
+
+  photos ActivityPhoto[]
+
+  @@index([schoolId, year])
+}
+
+model ActivityPhoto {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id])
+  url        String
+  createdAt  DateTime @default(now())
 }
 
 model Submission {

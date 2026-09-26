@@ -1,8 +1,9 @@
 import { PublicNav } from "@/components/PublicNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { ActivityBrowser } from "@/components/ActivityBrowser";
 import { GIAT } from "@/content/giat";
-import { giatCards } from "@/content/assets";
+import { getActivities } from "@/lib/activities";
 
 export const metadata = {
   title: "Giat",
@@ -10,8 +11,8 @@ export const metadata = {
     "Kegiatan SINGO MBOIS di SMP Negeri 27 Malang: literasi pembiasaan mingguan, bimbingan teknis guru, asesmen literasi, dan analisis kualitas tulisan tangan siswa.",
 };
 
-export default function GiatPage() {
-  const giat = giatCards();
+export default async function GiatPage() {
+  const activities = await getActivities();
 
   return (
     <div>
@@ -64,21 +65,7 @@ export default function GiatPage() {
             <div className="isi">
               <p className="penunjuk">Dokumentasi kegiatan</p>
               <h2 className="judul-bagian">Yang sudah berjalan</h2>
-              <div className="giat">
-                {giat.map((g) => (
-                  <div key={g.slug}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {g.foto && <img src={g.foto} alt={g.judul} />}
-                    <div className="giat-teks">
-                      <small>{g.label}</small>
-                      {g.judul}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--tinta-lembut)", marginTop: 20 }}>
-                {GIAT.activities.join(" · ")}
-              </p>
+              <ActivityBrowser activities={activities} />
             </div>
           </ScrollReveal>
         </section>
