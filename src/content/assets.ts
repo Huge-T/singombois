@@ -53,6 +53,13 @@ export function dokumen() {
       url: publicAsset("dokumen/sk-singo-mbois.pdf") ?? `${fallback}/tim-singo-mbois`,
       lokal: Boolean(publicAsset("dokumen/sk-singo-mbois.pdf")),
     },
+    {
+      nama: "HAKI SINGO MBOIS",
+      ket: "Sertifikat hak kekayaan intelektual SINGO MBOIS.",
+      jenis: "PDF",
+      url: publicAsset("dokumen/haki-singo-mbois.pdf") ?? fallback,
+      lokal: Boolean(publicAsset("dokumen/haki-singo-mbois.pdf")),
+    },
   ];
 }
 
