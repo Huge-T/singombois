@@ -43,7 +43,7 @@ export function dokumen() {
       nama: "Video Tutorial Layanan Online",
       ket: "Panduan memakai layanan SINGO MBOIS secara daring.",
       jenis: "VIDEO",
-      url: publicAsset("dokumen/video-tutorial.mp4") ?? fallback,
+      url: publicAsset("dokumen/video-tutorial.mp4") ?? "https://youtube.com/@smpn27malangmbois",
       lokal: Boolean(publicAsset("dokumen/video-tutorial.mp4")),
     },
     {
