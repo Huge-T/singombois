@@ -118,11 +118,24 @@ export default function TimPage() {
           <ScrollReveal>
             <div className="isi">
               <p className="penunjuk">{TEAM.network.title}</p>
-              <h2 className="judul-bagian">Sekolah mitra pengembangan</h2>
+              <h2 className="judul-bagian">Instansi jejaring inovasi</h2>
               <p className="pengantar">{TEAM.network.description}</p>
             </div>
             <div className="isi">
-              <MitraSlider items={TEAM.network.schools} />
+              <MitraSlider items={TEAM.network.list} />
+            </div>
+          </ScrollReveal>
+        </section>
+
+        <section className="bagian">
+          <ScrollReveal>
+            <div className="isi">
+              <p className="penunjuk">{TEAM.mitraSekolah.title}</p>
+              <h2 className="judul-bagian">Sekolah mitra pengembangan</h2>
+              <p className="pengantar">{TEAM.mitraSekolah.description}</p>
+            </div>
+            <div className="isi">
+              <MitraSlider items={TEAM.mitraSekolah.schools} reverse />
             </div>
           </ScrollReveal>
         </section>
@@ -135,7 +148,7 @@ export default function TimPage() {
               <p className="pengantar">{TEAM.actors.description}</p>
             </div>
             <div className="isi">
-              <MitraSlider items={TEAM.actors.list} reverse />
+              <MitraSlider items={TEAM.actors.list} />
             </div>
           </ScrollReveal>
         </section>

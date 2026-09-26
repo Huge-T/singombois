@@ -61,6 +61,18 @@ export const TEAM = {
   ],
   network: {
     title: "Jejaring Inovasi",
+    description: "Sesuai SK, SINGO MBOIS menjalin jejaring dengan instansi pemerintah Kota Malang berikut dalam pengembangan dan sosialisasi program:",
+    list: [
+      { name: "Dinas Pendidikan dan Kebudayaan Kota Malang", slug: null },
+      { name: "BAPPEDA Kota Malang", slug: null },
+      { name: "Dinas Sosial P3AP2KB Kota Malang", slug: null },
+      { name: "Dinas Komunikasi dan Informatika Kota Malang", slug: null },
+      { name: "DISPUSSIPDA Kota Malang", slug: null },
+      { name: "Kecamatan Kedungkandang", slug: null },
+    ] as { name: string; slug: string | null }[],
+  },
+  mitraSekolah: {
+    title: "Sekolah Mitra",
     description: "SINGO MBOIS menjalin kemitraan dengan sekolah-sekolah berikut sebagai mitra pengembangan dan uji coba program:",
     schools: [
       { name: "SMK Muhammadiyah 1 Taman Sidoarjo", slug: "smk-muhammadiyah-1-taman-sidoarjo" },
@@ -75,7 +87,7 @@ export const TEAM = {
   },
   actors: {
     title: "Aktor Inovasi",
-    description: "Pihak-pihak berikut turut mendukung pengembangan dan sosialisasi SINGO MBOIS:",
+    description: "Sesuai SK, pihak-pihak berikut turut mendukung pengembangan dan sosialisasi SINGO MBOIS:",
     list: [
       { name: "Universitas Airlangga", slug: "unair", category: "Akademisi" },
       { name: "Universitas Terbuka", slug: "universitas-terbuka", category: "Akademisi" },
@@ -85,8 +97,9 @@ export const TEAM = {
       { name: 'SABARO "Sanggar Baca Lesanpuro"', slug: null, category: "Organisasi Masyarakat" },
       { name: "Teras Literasi", slug: "teras-literasi", category: "Organisasi Masyarakat" },
       { name: "Bimbingan Belajar Forum Guru", slug: null, category: "Organisasi Masyarakat" },
-      { name: "Komite SMP Negeri 27 Malang", slug: null, category: "Organisasi Masyarakat" },
-      { name: "MalangTimes.com", slug: "malang-times", category: "Media Massa" },
+      { name: "Komite Sekolah", slug: null, category: "Organisasi Masyarakat" },
+      { name: "Radar Malang", slug: null, category: "Media Massa" },
+      { name: "CV Kaliurang Berkah Group", slug: null, category: "Dunia Usaha" },
     ] as { name: string; slug: string | null; category: string }[],
   },
   sk: {
