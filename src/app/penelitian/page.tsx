@@ -1,7 +1,7 @@
 import { PublicNav } from "@/components/PublicNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { BASELINE_INDICATORS, PROGRAM_EFFECTIVENESS, STUDY_SAMPLE_N } from "@/content/indicators";
+import { BASELINE_INDICATORS, STUDY_SAMPLE_N } from "@/content/indicators";
 
 export const metadata = {
   title: "Penelitian",
@@ -103,28 +103,26 @@ export default function PenelitianPage() {
           <ScrollReveal>
             <div className="isi">
               <p className="penunjuk">Temuan</p>
-              <h2 className="judul-bagian">15 indikator, efektivitas {PROGRAM_EFFECTIVENESS}%</h2>
+              <h2 className="judul-bagian">15 indikator, efektivitas tinggi</h2>
               <p className="pengantar">
-                Studi mengukur 15 indikator literasi dasar dengan rata-rata efektivitas{" "}
-                {PROGRAM_EFFECTIVENESS}% (kategori tinggi). Dua indikator tertinggal dan menjadi
-                fokus pengembangan aplikasi ini: kerapian tulisan tangan (67%) dan menyimak audio
-                (70%).
+                Studi mengukur 15 indikator literasi dasar dengan rata-rata efektivitas pada
+                kategori tinggi. Dua indikator tertinggal dan menjadi fokus pengembangan aplikasi
+                ini: kerapian tulisan tangan dan menyimak audio.
               </p>
 
               <table className="ind" style={{ maxWidth: 760 }}>
                 <thead>
                   <tr>
                     <th>Indikator</th>
-                    <th className="n" style={{ width: 110 }}>
-                      Baseline 2026
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {BASELINE_INDICATORS.map((ind) => (
+                  {BASELINE_INDICATORS.filter(
+                    (ind) =>
+                      !["motivation", "learning_support", "speaking_confidence"].includes(ind.code)
+                  ).map((ind) => (
                     <tr key={ind.code} className={ind.value < 72 ? "flag" : ""}>
                       <td>{ind.label}</td>
-                      <td className="n">{ind.value}%</td>
                     </tr>
                   ))}
                 </tbody>

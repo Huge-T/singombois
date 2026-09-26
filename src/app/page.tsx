@@ -361,7 +361,7 @@ export default async function HomePage() {
                     <StatCounter value={stats.visitCount} />
                   </p>
                   <h3>Kunjungan halaman</h3>
-                  <p>Pengunjung unik per hari, dihitung situs ini sendiri.</p>
+                  <p>Total kunjungan ke website SINGO MBOIS sejak diluncurkan.</p>
                 </div>
               </div>
 
