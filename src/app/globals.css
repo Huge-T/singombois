@@ -177,6 +177,26 @@ header.situs {
   .nav-tautan {
     display: none;
   }
+  .menu-tombol {
+    display: flex;
+  }
+  .menu-toggle:checked ~ .situs .nav-tautan {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--kertas-terang);
+    padding: 10px 24px 16px;
+    border-bottom: 1px solid var(--garis);
+    box-shadow: 0 10px 20px rgba(19, 28, 61, 0.12);
+  }
+  .menu-toggle:checked ~ .situs .nav-tautan a.tautan {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--garis);
+  }
 }
 
 /* ---------- tombol ---------- */
