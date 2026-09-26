@@ -61,9 +61,33 @@ export const TEAM = {
   ],
   network: {
     title: "Jejaring Inovasi",
-    description:
-      "SINGO MBOIS menjalin kemitraan dengan sekolah-sekolah berikut dalam pengembangan dan uji coba program:",
-    partners: ["SMK Mitra", "SMK Diposby", "SMPN 1 Panji Situbondo", "SMPN 10 Probolinggo"],
+    description: "SINGO MBOIS menjalin kemitraan dengan sekolah-sekolah berikut sebagai mitra pengembangan dan uji coba program:",
+    schools: [
+      { name: "SMK Muhammadiyah 1 Taman Sidoarjo", slug: "smk-muhammadiyah-1-taman-sidoarjo" },
+      { name: "SMK Diponegoro Surabaya", slug: "smk-diponegoro-surabaya" },
+      { name: "SMPN 1 Panji Kabupaten Situbondo", slug: null },
+      { name: "SMPN 10 Probolinggo", slug: null },
+      { name: "SMPN 1 Kwanyar", slug: null },
+      { name: "SMPN 2 Padalarang", slug: null },
+      { name: "SD Negeri 1 Pandanajeng", slug: null },
+      { name: "SD Negeri Tanjungsari 97", slug: "sdn-tanjungsari-97" },
+    ] as { name: string; slug: string | null }[],
+  },
+  actors: {
+    title: "Aktor Inovasi",
+    description: "Pihak-pihak berikut turut mendukung pengembangan dan sosialisasi SINGO MBOIS:",
+    list: [
+      { name: "Universitas Airlangga", slug: "unair", category: "Akademisi" },
+      { name: "Universitas Terbuka", slug: "universitas-terbuka", category: "Akademisi" },
+      { name: "Kelurahan Lesanpuro", slug: null, category: "Pemerintah" },
+      { name: "PKBM Al-Khadijah", slug: "pkbm-al-khadijah", category: "Organisasi Masyarakat" },
+      { name: "PKBM Ki Hadjar Dewantara", slug: "pkbm-ki-hadjar-dewantara", category: "Organisasi Masyarakat" },
+      { name: 'SABARO "Sanggar Baca Lesanpuro"', slug: null, category: "Organisasi Masyarakat" },
+      { name: "Teras Literasi", slug: "teras-literasi", category: "Organisasi Masyarakat" },
+      { name: "Bimbingan Belajar Forum Guru", slug: null, category: "Organisasi Masyarakat" },
+      { name: "Komite SMP Negeri 27 Malang", slug: null, category: "Organisasi Masyarakat" },
+      { name: "MalangTimes.com", slug: "malang-times", category: "Media Massa" },
+    ] as { name: string; slug: string | null; category: string }[],
   },
   sk: {
     label: "SK SINGO MBOIS SMPN 27",

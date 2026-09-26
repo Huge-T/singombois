@@ -10,6 +10,40 @@ export const metadata = {
     "Tim pengelola dan pelaksana inovasi SINGO MBOIS SMP Negeri 27 Malang: enam divisi pelaksana, peneliti, jejaring inovasi, serta unduhan SK dan Buku Panduan Teknis.",
 };
 
+interface MitraEntry {
+  name: string;
+  slug: string | null;
+  category?: string;
+}
+
+// Sebagian mitra/aktor belum punya logo terunggah — tampilkan nama saja
+// untuk yang itu, sama seperti pola placeholder aset lain di situs ini.
+function MitraSlider({ items, reverse }: { items: MitraEntry[]; reverse?: boolean }) {
+  return (
+    <div className="mitra-slider">
+      <div className={`mitra-track ${reverse ? "mitra-track-reverse" : ""}`}>
+        {[...items, ...items].map((p, i) => {
+          const logo = p.slug ? assetUrl(`foto/mitra/${p.slug}.png`) : null;
+          return (
+            <div className="mitra-item" key={`${p.name}-${i}`}>
+              {logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logo} alt={p.name} />
+              ) : (
+                <div className="mitra-item-placeholder" aria-hidden="true" />
+              )}
+              <span>
+                {p.name}
+                {p.category ? ` · ${p.category}` : ""}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function TimPage() {
   return (
     <div>
@@ -85,13 +119,22 @@ export default function TimPage() {
               <p className="penunjuk">{TEAM.network.title}</p>
               <h2 className="judul-bagian">Sekolah mitra pengembangan</h2>
               <p className="pengantar">{TEAM.network.description}</p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {TEAM.network.partners.map((p) => (
-                  <span key={p} className="pill pill-singo">
-                    {p}
-                  </span>
-                ))}
-              </div>
+            </div>
+            <div className="isi">
+              <MitraSlider items={TEAM.network.schools} />
+            </div>
+          </ScrollReveal>
+        </section>
+
+        <section className="bagian">
+          <ScrollReveal>
+            <div className="isi">
+              <p className="penunjuk">{TEAM.actors.title}</p>
+              <h2 className="judul-bagian">Pendukung pengembangan program</h2>
+              <p className="pengantar">{TEAM.actors.description}</p>
+            </div>
+            <div className="isi">
+              <MitraSlider items={TEAM.actors.list} reverse />
             </div>
           </ScrollReveal>
         </section>

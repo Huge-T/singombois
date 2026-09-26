@@ -2008,3 +2008,58 @@ footer.kaki a {
     scroll-behavior: auto;
   }
 }
+
+/* ---------- mitra (logo auto-slider) ---------- */
+.mitra-slider {
+  overflow: hidden;
+  position: relative;
+  margin-top: 12px;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 48px, black calc(100% - 48px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 48px, black calc(100% - 48px), transparent);
+}
+.mitra-track {
+  display: flex;
+  gap: 40px;
+  width: max-content;
+  animation: mitra-scroll 34s linear infinite;
+}
+.mitra-track-reverse {
+  animation-direction: reverse;
+}
+.mitra-slider:hover .mitra-track {
+  animation-play-state: paused;
+}
+.mitra-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 132px;
+  flex-shrink: 0;
+}
+.mitra-item img {
+  height: 68px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.mitra-item-placeholder {
+  height: 68px;
+  width: 100%;
+  border: 1px dashed var(--garis);
+  border-radius: 4px;
+}
+.mitra-item span {
+  font-size: 11px;
+  text-align: center;
+  color: var(--tinta-lembut);
+  line-height: 1.3;
+}
+@keyframes mitra-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
