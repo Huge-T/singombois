@@ -103,9 +103,9 @@ export default function PenelitianPage() {
           <ScrollReveal>
             <div className="isi">
               <p className="penunjuk">Temuan</p>
-              <h2 className="judul-bagian">15 indikator, efektivitas tinggi</h2>
+              <h2 className="judul-bagian">12 indikator, efektivitas tinggi</h2>
               <p className="pengantar">
-                Studi mengukur 15 indikator literasi dasar dengan rata-rata efektivitas pada
+                Studi mengukur 12 indikator literasi dasar dengan rata-rata efektivitas pada
                 kategori tinggi. Dua indikator tertinggal dan menjadi fokus pengembangan aplikasi
                 ini: kerapian tulisan tangan dan menyimak audio.
               </p>

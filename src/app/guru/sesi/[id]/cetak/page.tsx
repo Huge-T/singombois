@@ -63,6 +63,15 @@ export default async function CetakLembarKerjaPage({ params }: { params: Promise
           .print-page { page-break-after: always; }
           @page { size: A4; margin: 12mm; }
         }
+        /* Chrome/Edge mematikan "Background graphics" secara default di dialog
+           cetak — tanpa ini, garis lembar kerja (border + margin-line yang
+           pakai background) tidak ikut tercetak sama sekali walau kelihatan
+           normal di layar. print-color-adjust memaksa keduanya tetap tercetak
+           terlepas dari opsi itu. */
+        .print-page, .print-page * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         .print-page {
           width: 186mm;
           min-height: 273mm;
@@ -75,8 +84,8 @@ export default async function CetakLembarKerjaPage({ params }: { params: Promise
         }
         .corner { position: absolute; width: 6mm; height: 6mm; background: #16232F; }
         .lines { position: relative; margin-top: 10mm; margin-left: ${marginLeftMm}mm; }
-        .rule-row { height: ${lineHeightMm}mm; border-bottom: 0.3mm solid ${RULE_COLOR}; }
-        .margin-line { position: absolute; top: 0; bottom: 0; left: ${marginLeftMm - 2}mm; width: 0.4mm; background: ${MARGIN_COLOR}; }
+        .rule-row { height: ${lineHeightMm}mm; border-bottom: 0.4mm solid ${RULE_COLOR}; }
+        .margin-line { position: absolute; top: 0; bottom: 0; left: ${marginLeftMm - 2}mm; width: 0.5mm; background: ${MARGIN_COLOR}; }
       `}</style>
 
       <div className="no-print sheet" style={{ padding: "24px" }}>

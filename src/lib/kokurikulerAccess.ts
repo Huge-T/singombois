@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AppRole } from "@/lib/auth";
+import { deleteUploadedFile } from "@/lib/storage";
+import { withRetry } from "@/lib/dbRetry";
 
 /**
  * Kontrol akses terpusat untuk fitur kokurikuler — dipakai oleh ketiga area
@@ -58,6 +60,43 @@ export function canWriteKokurikulerReading(viewer: KokurikulerViewer, quiz: { cr
     viewer.role === "GURU_BK" ||
     viewer.role === "ADMIN" ||
     viewer.role === "SUPER_ADMIN"
+  );
+}
+
+/** Bersihkan jawaban+foto+pembacaan attempt lalu buka lagi untuk dikerjakan
+ *  ulang siswa — dipakai saat kesimpulan otomatis (lihat kokurikulerConclusion.ts)
+ *  menandai terlalu banyak dimensi lemah untuk dinilai apa adanya. Attempt-nya
+ *  sendiri tidak dihapus (beda dari deleteKokurikulerQuiz), cuma direset ke
+ *  kondisi "belum dikerjakan". Otorisasi dicek di pemanggil (actions.ts
+ *  masing-masing role), bukan di sini. */
+export async function resetKokurikulerAttemptCore(attemptId: string) {
+  const artifacts = await prisma.kokurikulerArtifact.findMany({
+    where: { answer: { attemptId } },
+    select: { id: true, originalPath: true },
+  });
+  for (const artifact of artifacts) {
+    await deleteUploadedFile(artifact.originalPath);
+  }
+
+  await withRetry(() =>
+    prisma.$transaction([
+      prisma.kokurikulerFeatureSet.deleteMany({ where: { artifactId: { in: artifacts.map((a) => a.id) } } }),
+      prisma.kokurikulerArtifact.deleteMany({ where: { answer: { attemptId } } }),
+      prisma.kokurikulerAnswer.deleteMany({ where: { attemptId } }),
+      prisma.kokurikulerReading.deleteMany({ where: { attemptId } }),
+      prisma.kokurikulerAttempt.update({
+        where: { id: attemptId },
+        data: {
+          submittedAt: null,
+          autoCorrect: null,
+          autoTotal: null,
+          essayScore: null,
+          essayGradedById: null,
+          essayGradedAt: null,
+          finalScore: null,
+        },
+      }),
+    ])
   );
 }
 

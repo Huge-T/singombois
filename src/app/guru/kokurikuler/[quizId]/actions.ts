@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { parseKokurikulerQuestionsCsv } from "@/lib/kokurikulerCsv";
 import { deleteUploadedFile } from "@/lib/storage";
 import { withRetry } from "@/lib/dbRetry";
+import { resetKokurikulerAttemptCore } from "@/lib/kokurikulerAccess";
 
 async function requireQuizOwner(quizId: string) {
   const session = await auth();
@@ -96,6 +97,20 @@ export async function closeKokurikulerQuiz(quizId: string) {
   revalidatePath(`/guru/kokurikuler/${quizId}`);
   revalidatePath("/guru/kokurikuler");
   revalidatePath("/siswa/kokurikuler");
+}
+
+export async function resetKokurikulerAttempt(quizId: string, attemptId: string) {
+  await requireQuizOwner(quizId);
+
+  const attempt = await prisma.kokurikulerAttempt.findUnique({ where: { id: attemptId } });
+  if (!attempt || attempt.quizId !== quizId) throw new Error("Attempt tidak ditemukan");
+
+  await resetKokurikulerAttemptCore(attemptId);
+
+  revalidatePath(`/guru/kokurikuler/${quizId}/hasil/${attemptId}`);
+  revalidatePath(`/guru/kokurikuler/${quizId}/hasil`);
+  revalidatePath(`/koordinator/kokurikuler/${quizId}/hasil/${attemptId}`);
+  revalidatePath(`/bk/kokurikuler/${attemptId}`);
 }
 
 export async function deleteKokurikulerQuiz(quizId: string) {

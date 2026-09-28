@@ -21,7 +21,7 @@ export default async function KoordinatorKokurikulerAttemptPage({
       <p className="crumb">KOORDINATOR · {quiz.label}</p>
       <h2 className="h2">Hasil {attempt.student.name}</h2>
 
-      <AttemptDetail questions={quiz.questions} attempt={attempt} showDraftReading={false} />
+      <AttemptDetail questions={quiz.questions} attempt={attempt} showDraftReading={false} tema={quiz.tema} />
     </div>
   );
 }

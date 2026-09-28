@@ -1,5 +1,6 @@
 import type { KokurikulerQuestionType } from "@prisma/client";
 import { summarizeKokurikulerPersonalityPattern } from "@/lib/kokurikulerPersonality";
+import { generateKokurikulerConclusion } from "@/lib/kokurikulerConclusion";
 
 const TYPE_LABEL: Record<KokurikulerQuestionType, string> = {
   PILIHAN_GANDA: "Pilihan ganda",
@@ -52,6 +53,8 @@ export function AttemptDetail({
   questions,
   attempt,
   showDraftReading,
+  tema,
+  retryAction,
 }: {
   questions: QuestionForDetail[];
   attempt: {
@@ -66,9 +69,18 @@ export function AttemptDetail({
     reading: ReadingForDetail | null;
   };
   showDraftReading: boolean;
+  /** Tema kuis (mis. "GEMATI") — dipakai mencari bank kalimat kesimpulan;
+   *  tema di luar bank yang dikenal tidak menghasilkan kesimpulan sama sekali. */
+  tema?: string | null;
+  /** Tombol "izinkan mengulang" — hanya dirender kalau kesimpulan menandai
+   *  terlalu banyak dimensi lemah. Halaman pemanggil yang menyediakan tombolnya
+   *  (butuh otorisasi & quizId/attemptId spesifik), AttemptDetail cuma
+   *  memutuskan kapan slot ini ditampilkan. */
+  retryAction?: React.ReactNode;
 }) {
   const answerByQuestionId = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const pattern = summarizeKokurikulerPersonalityPattern(questions, attempt.answers);
+  const conclusion = generateKokurikulerConclusion(tema, pattern.dimensionTallies);
 
   return (
     <div>
@@ -168,6 +180,31 @@ export function AttemptDetail({
           {pattern.disclaimer}
         </p>
       </div>
+
+      {conclusion && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <p className="tbl-k">KESIMPULAN (BAHAN INPUT RAPOT)</p>
+          {conclusion.text ? (
+            <p>{conclusion.text}</p>
+          ) : (
+            <p className="hint">Belum ada dimensi yang mencapai ambang 70% untuk dituliskan kesimpulannya.</p>
+          )}
+          {conclusion.weakDimensions.length > 0 && (
+            <p className="hint" style={{ marginTop: 8 }}>
+              Dimensi di bawah 70% (tidak dimasukkan ke kesimpulan): {conclusion.weakDimensions.join(", ")}.
+            </p>
+          )}
+          {conclusion.showRetryOption && (
+            <div style={{ marginTop: 12 }}>
+              <p className="hint" style={{ marginBottom: 8 }}>
+                Lebih dari 2 dimensi masih di bawah 70% — pertimbangkan memberi siswa kesempatan
+                mengulang kuis ini sebelum kesimpulan dipakai untuk rapot.
+              </p>
+              {retryAction}
+            </div>
+          )}
+        </div>
+      )}
 
       {attempt.reading?.status === "PUBLISHED" ? (
         <div className="card">

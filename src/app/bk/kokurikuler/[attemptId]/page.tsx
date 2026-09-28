@@ -29,7 +29,7 @@ export default async function BkKokurikulerAttemptPage({ params }: { params: Pro
         Bahan analisis: pola jawaban PG/Benar-Salah bertag dimensi + kutipan jawaban uraian, bukan skor otomatis.
       </p>
 
-      <AttemptDetail questions={quiz.questions} attempt={attempt} showDraftReading />
+      <AttemptDetail questions={quiz.questions} attempt={attempt} showDraftReading tema={quiz.tema} />
 
       <div style={{ marginTop: 20 }}>
         <p className="tbl-k">TULIS ANALISIS KEPRIBADIAN</p>
