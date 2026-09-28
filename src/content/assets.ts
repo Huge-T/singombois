@@ -60,5 +60,17 @@ export function dokumen() {
       url: publicAsset("dokumen/haki-singo-mbois.pdf") ?? fallback,
       lokal: Boolean(publicAsset("dokumen/haki-singo-mbois.pdf")),
     },
+    {
+      nama: "Profil SINGO MBOIS",
+      ket: "Buku profil inovasi layanan SINGO MBOIS.",
+      jenis: "PDF",
+      url: publicAsset("dokumen/profil-singo-mbois.pdf") ?? fallback,
+      lokal: Boolean(publicAsset("dokumen/profil-singo-mbois.pdf")),
+    },
   ];
+}
+
+/** URL profil SINGO MBOIS untuk CTA hero (null bila berkasnya belum ada). */
+export function profilSingoMbois(): string | null {
+  return publicAsset("dokumen/profil-singo-mbois.pdf");
 }

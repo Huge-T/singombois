@@ -80,7 +80,7 @@ export function AttemptDetail({
 }) {
   const answerByQuestionId = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const pattern = summarizeKokurikulerPersonalityPattern(questions, attempt.answers);
-  const conclusion = generateKokurikulerConclusion(tema, pattern.dimensionTallies);
+  const conclusion = generateKokurikulerConclusion(tema, pattern.dimensionTallies, attempt.essayScore);
 
   return (
     <div>
@@ -191,9 +191,22 @@ export function AttemptDetail({
           )}
           {conclusion.weakDimensions.length > 0 && (
             <p className="hint" style={{ marginTop: 8 }}>
-              Dimensi di bawah 70% (tidak dimasukkan ke kesimpulan): {conclusion.weakDimensions.join(", ")}.
+              Dimensi di bawah 70% (siswa perlu mengulang untuk dimensi ini, belum dimasukkan ke
+              kesimpulan): {conclusion.weakDimensions.join(", ")}.
             </p>
           )}
+          {conclusion.combinedScore !== null && (
+            <p style={{ marginTop: 8 }}>
+              <strong>Skor gabungan (rata-rata dimensi + nilai esai): {conclusion.combinedScore}</strong>
+            </p>
+          )}
+          {conclusion.weakDimensions.length === 0 &&
+            conclusion.achievedDimensions.length > 0 &&
+            conclusion.combinedScore === null && (
+              <p className="hint" style={{ marginTop: 8 }}>
+                Semua dimensi sudah tercapai — skor gabungan akan muncul setelah nilai esai diisi.
+              </p>
+            )}
           {conclusion.showRetryOption && (
             <div style={{ marginTop: 12 }}>
               <p className="hint" style={{ marginBottom: 8 }}>

@@ -35,13 +35,18 @@ export interface KokurikulerConclusionResult {
   achievedDimensions: string[];
   weakDimensions: string[]; // di bawah ambang, deskripsinya sengaja tidak dimasukkan
   showRetryOption: boolean; // > MAX_WEAK_DIMENSIONS_BEFORE_RETRY dimensi jelek
+  // Skor gabungan (bahan nilai rapot) — hanya terisi kalau SEMUA dimensi yang
+  // dilacak sudah >= ambang DAN nilai esai sudah dinilai guru. Rumus: rata-rata
+  // persentase seluruh dimensi, dirata-rata lagi dengan nilai esai.
+  combinedScore: number | null;
 }
 
 /** null kalau tema tidak dikenali (belum ada bank kalimatnya) — fitur ini
  *  tidak menampilkan apa pun untuk tema di luar daftar, alih-alih menebak. */
 export function generateKokurikulerConclusion(
   tema: string | null | undefined,
-  dimensionTallies: DimensionTally[]
+  dimensionTallies: DimensionTally[],
+  essayScore: number | null
 ): KokurikulerConclusionResult | null {
   if (!tema) return null;
   const bank = CONCLUSION_SENTENCES[tema.trim().toLowerCase()];
@@ -50,9 +55,11 @@ export function generateKokurikulerConclusion(
   const achievedDimensions: string[] = [];
   const weakDimensions: string[] = [];
   const sentences: string[] = [];
+  const trackedPct: number[] = [];
 
   for (const t of dimensionTallies) {
     if (!(t.dimension in bank)) continue; // dimensi di luar bank kalimat tema ini, lewati
+    trackedPct.push(t.pct);
     if (t.pct >= ACHIEVED_THRESHOLD_PCT) {
       achievedDimensions.push(t.dimension);
       sentences.push(bank[t.dimension]);
@@ -61,11 +68,17 @@ export function generateKokurikulerConclusion(
     }
   }
 
+  const allAchieved = trackedPct.length > 0 && weakDimensions.length === 0;
+  const dimensionAveragePct = trackedPct.length > 0 ? trackedPct.reduce((a, b) => a + b, 0) / trackedPct.length : 0;
+  const combinedScore =
+    allAchieved && essayScore !== null ? Math.round(((dimensionAveragePct + essayScore) / 2) * 10) / 10 : null;
+
   return {
     tema,
     text: sentences.join(" "),
     achievedDimensions,
     weakDimensions,
     showRetryOption: weakDimensions.length > MAX_WEAK_DIMENSIONS_BEFORE_RETRY,
+    combinedScore,
   };
 }

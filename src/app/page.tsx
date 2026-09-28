@@ -6,7 +6,7 @@ import { DemoKemiringan } from "@/components/DemoKemiringan";
 import { BarChart } from "@/components/BarChart";
 import { StatCounter } from "@/components/StatCounter";
 import { CONTACTS } from "@/content/team";
-import { dokumen } from "@/content/assets";
+import { dokumen, profilSingoMbois } from "@/content/assets";
 import { ActivityBrowser } from "@/components/ActivityBrowser";
 import { getRecentActivities } from "@/lib/activities";
 import {
@@ -110,6 +110,11 @@ export default async function HomePage() {
               <a className="tombol tombol-kedua" href="#berkas">
                 Buka buku panduan
               </a>
+              {profilSingoMbois() && (
+                <a className="tombol tombol-kedua" href={profilSingoMbois()!} target="_blank" rel="noreferrer">
+                  Profil SINGO MBOIS
+                </a>
+              )}
             </div>
           </div>
         </div>
