@@ -2253,3 +2253,29 @@ footer.kaki a {
     transform: translateX(-50%);
   }
 }
+
+/* =====================================================
+   CETAK (dasbor)
+   Halaman cetak (mis. /guru/sesi/[id]/cetak) tetap dirender di dalam
+   AppShell (header + sidebar) seperti halaman dasbor lain, jadi tanpa
+   ini header/sidebar/hamburger ikut tercetak di setiap lembar dan
+   memepetkan/mendorong lembar kerja itu sendiri. Halaman cetak yang
+   pakai @page-nya sendiri (lihat inline <style> di page.tsx-nya)
+   cuma menyembunyikan elemen no-print miliknya sendiri, tidak pernah
+   menyentuh chrome dasbor ini — makanya perlu aturan global terpisah.
+   ===================================================== */
+@media print {
+  header.situs,
+  .side,
+  .menu-tombol,
+  .menu-latar {
+    display: none !important;
+  }
+  .app {
+    display: block !important;
+  }
+  .main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}
