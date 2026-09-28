@@ -54,7 +54,7 @@ export function AttemptDetail({
   attempt,
   showDraftReading,
   tema,
-  retryAction,
+  renderDimensionRetry,
 }: {
   questions: QuestionForDetail[];
   attempt: {
@@ -72,11 +72,10 @@ export function AttemptDetail({
   /** Tema kuis (mis. "GEMATI") — dipakai mencari bank kalimat kesimpulan;
    *  tema di luar bank yang dikenal tidak menghasilkan kesimpulan sama sekali. */
   tema?: string | null;
-  /** Tombol "izinkan mengulang" — hanya dirender kalau kesimpulan menandai
-   *  terlalu banyak dimensi lemah. Halaman pemanggil yang menyediakan tombolnya
-   *  (butuh otorisasi & quizId/attemptId spesifik), AttemptDetail cuma
-   *  memutuskan kapan slot ini ditampilkan. */
-  retryAction?: React.ReactNode;
+  /** Tombol "ulangi dimensi ini" per baris dimensi di bawah ambang — halaman
+   *  pemanggil yang menyediakan tombolnya (butuh otorisasi & quizId/attemptId
+   *  spesifik), AttemptDetail cuma memutuskan dimensi mana yang dapat slot ini. */
+  renderDimensionRetry?: (dimension: string) => React.ReactNode;
 }) {
   const answerByQuestionId = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const pattern = summarizeKokurikulerPersonalityPattern(questions, attempt.answers);
@@ -157,11 +156,17 @@ export function AttemptDetail({
         {pattern.dimensionTallies.length === 0 && pattern.essayNotes.length === 0 && (
           <p className="hint">Tidak ada soal bertag dimensi kepribadian di kuis ini.</p>
         )}
-        {pattern.dimensionTallies.map((t) => (
-          <p key={t.dimension}>
-            {t.dimension}: {t.correct}/{t.total} benar ({t.pct}%)
-          </p>
-        ))}
+        {pattern.dimensionTallies.map((t) => {
+          const isWeak = conclusion?.weakDimensions.includes(t.dimension);
+          return (
+            <p key={t.dimension} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span>
+                {t.dimension}: {t.correct}/{t.total} benar ({t.pct}%)
+              </span>
+              {isWeak && renderDimensionRetry?.(t.dimension)}
+            </p>
+          );
+        })}
         {pattern.essayNotes.length > 0 && (
           <>
             <p className="tbl-k" style={{ marginTop: 12 }}>
@@ -202,14 +207,12 @@ export function AttemptDetail({
               </p>
             )}
           {conclusion.showRetryOption && (
-            <div style={{ marginTop: 12 }}>
-              <p className="hint" style={{ marginBottom: 8 }}>
-                Dimensi {conclusion.weakDimensions.join(", ")} belum mencapai 70% — siswa perlu
-                mengulang kuis ini sebelum kesimpulan lengkap dan skor gabungan bisa dipakai untuk
-                rapot.
-              </p>
-              {retryAction}
-            </div>
+            <p className="hint" style={{ marginTop: 8 }}>
+              Dimensi {conclusion.weakDimensions.join(", ")} belum mencapai 70% — klik &quot;Ulangi
+              dimensi ini&quot; di kartu Pola Jawaban di atas untuk membuka ulang soal dimensi itu
+              saja. Kesimpulan lengkap dan skor gabungan baru bisa dipakai untuk rapot setelah semua
+              dimensi tercapai.
+            </p>
           )}
         </div>
       )}

@@ -31,6 +31,15 @@ export default async function SiswaKokurikulerQuizPage({ params }: { params: Pro
   const initialAccepted = (existing?.answers ?? [])
     .filter((a) => a.artifact?.accepted)
     .map((a) => a.questionId);
+  // Jawaban objektif (PG/Benar-Salah) yang sudah tersimpan dari sebelumnya —
+  // mis. setelah guru mereset satu dimensi kepribadian, jawaban dimensi lain
+  // tetap ada di sini dan dikunci di QuizRunner (siswa cuma mengisi ulang
+  // yang kosong). Jawaban URAIAN foto tidak lewat sini (answerText selalu
+  // null untuk itu).
+  const lockedAnswers: Record<string, string> = {};
+  for (const a of existing?.answers ?? []) {
+    if (a.answerText) lockedAnswers[a.questionId] = a.answerText;
+  }
 
   return (
     <div>
@@ -49,6 +58,7 @@ export default async function SiswaKokurikulerQuizPage({ params }: { params: Pro
         }))}
         usesPhotoEssay={usesPhotoEssay}
         initialAccepted={initialAccepted}
+        lockedAnswers={lockedAnswers}
       />
     </div>
   );

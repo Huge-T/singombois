@@ -2,9 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { resetKokurikulerAttempt } from "../../actions";
+import { resetKokurikulerDimension } from "../../actions";
 
-export function ResetAttemptButton({ quizId, attemptId }: { quizId: string; attemptId: string }) {
+export function ResetDimensionButton({
+  quizId,
+  attemptId,
+  dimension,
+}: {
+  quizId: string;
+  attemptId: string;
+  dimension: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -12,15 +20,15 @@ export function ResetAttemptButton({ quizId, attemptId }: { quizId: string; atte
   function handleReset() {
     if (
       !window.confirm(
-        "Izinkan siswa mengulang kuis ini? Jawaban, foto, dan nilai yang sudah ada untuk percobaan ini akan dihapus permanen."
+        `Izinkan siswa mengulang soal dimensi "${dimension}" saja? Jawaban dimensi ini akan dihapus; dimensi dan esai lain tidak terpengaruh.`
       )
     )
       return;
     setError(null);
     startTransition(async () => {
       try {
-        await resetKokurikulerAttempt(quizId, attemptId);
-        router.push(`/guru/kokurikuler/${quizId}/hasil`);
+        await resetKokurikulerDimension(quizId, attemptId, dimension);
+        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Gagal mereset");
       }
@@ -28,9 +36,9 @@ export function ResetAttemptButton({ quizId, attemptId }: { quizId: string; atte
   }
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
       <button type="button" className="btn btn-mark btn-sm" disabled={pending} onClick={handleReset}>
-        {pending ? "Memproses..." : "Izinkan mengulang kuis"}
+        {pending ? "..." : "Ulangi dimensi ini"}
       </button>
       {error && <span style={{ fontSize: 12, color: "var(--mark)" }}>{error}</span>}
     </span>

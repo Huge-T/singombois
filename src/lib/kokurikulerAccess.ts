@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import type { AppRole } from "@/lib/auth";
-import { deleteUploadedFile } from "@/lib/storage";
 import { withRetry } from "@/lib/dbRetry";
 
 /**
@@ -63,38 +62,43 @@ export function canWriteKokurikulerReading(viewer: KokurikulerViewer, quiz: { cr
   );
 }
 
-/** Bersihkan jawaban+foto+pembacaan attempt lalu buka lagi untuk dikerjakan
- *  ulang siswa — dipakai saat kesimpulan otomatis (lihat kokurikulerConclusion.ts)
- *  menandai terlalu banyak dimensi lemah untuk dinilai apa adanya. Attempt-nya
- *  sendiri tidak dihapus (beda dari deleteKokurikulerQuiz), cuma direset ke
- *  kondisi "belum dikerjakan". Otorisasi dicek di pemanggil (actions.ts
- *  masing-masing role), bukan di sini. */
-export async function resetKokurikulerAttemptCore(attemptId: string) {
-  const artifacts = await prisma.kokurikulerArtifact.findMany({
-    where: { answer: { attemptId } },
-    select: { id: true, originalPath: true },
+/** Hapus jawaban objektif (PG/Benar-Salah) attempt untuk SATU dimensi
+ *  kepribadian saja lalu buka lagi kuisnya — dimensi lain (dan esai) tetap
+ *  utuh, siswa cuma perlu mengisi ulang soal-soal dimensi yang direset (lihat
+ *  QuizRunner: soal yang jawabannya sudah ada di DB dikunci, cuma yang kosong
+ *  yang bisa diisi). Dipakai dari kartu Kesimpulan (kokurikulerConclusion.ts)
+ *  saat sebuah dimensi masih di bawah ambang tercapai. Otorisasi dicek di
+ *  pemanggil (actions.ts masing-masing role), bukan di sini. */
+export async function resetKokurikulerDimensionCore(attemptId: string, dimension: string) {
+  const attempt = await prisma.kokurikulerAttempt.findUnique({ where: { id: attemptId }, select: { quizId: true } });
+  if (!attempt) throw new Error("Attempt tidak ditemukan");
+
+  // Dibatasi ke soal objektif saja (bukan URAIAN) — itu yang dipakai
+  // dimensionTallies untuk menghitung persentase. Kalau soal URAIAN foto
+  // kebetulan pakai tag dimensi yang sama, jawabannya (KokurikulerAnswer)
+  // masih dipegang KokurikulerArtifact-nya — menghapusnya di sini akan
+  // melanggar foreign key, jadi sengaja dilewati.
+  const questions = await prisma.kokurikulerQuestion.findMany({
+    where: {
+      quizId: attempt.quizId,
+      personalityDimension: dimension,
+      type: { in: ["PILIHAN_GANDA", "BENAR_SALAH"] },
+    },
+    select: { id: true },
   });
-  for (const artifact of artifacts) {
-    await deleteUploadedFile(artifact.originalPath);
-  }
+  const questionIds = questions.map((q) => q.id);
+  if (questionIds.length === 0) return;
 
   await withRetry(() =>
     prisma.$transaction([
-      prisma.kokurikulerFeatureSet.deleteMany({ where: { artifactId: { in: artifacts.map((a) => a.id) } } }),
-      prisma.kokurikulerArtifact.deleteMany({ where: { answer: { attemptId } } }),
-      prisma.kokurikulerAnswer.deleteMany({ where: { attemptId } }),
-      prisma.kokurikulerReading.deleteMany({ where: { attemptId } }),
+      prisma.kokurikulerAnswer.deleteMany({ where: { attemptId, questionId: { in: questionIds } } }),
+      // autoCorrect/autoTotal/finalScore jadi usang begitu sebagian jawaban
+      // objektif dihapus — dihitung ulang otomatis saat siswa submit ulang
+      // (submitKokurikulerAttempt selalu mengirim ulang seluruh jawaban PG/
+      // Benar-Salah, termasuk yang dikunci, jadi hasilnya tetap benar).
       prisma.kokurikulerAttempt.update({
         where: { id: attemptId },
-        data: {
-          submittedAt: null,
-          autoCorrect: null,
-          autoTotal: null,
-          essayScore: null,
-          essayGradedById: null,
-          essayGradedAt: null,
-          finalScore: null,
-        },
+        data: { submittedAt: null, autoCorrect: null, autoTotal: null, finalScore: null },
       }),
     ])
   );

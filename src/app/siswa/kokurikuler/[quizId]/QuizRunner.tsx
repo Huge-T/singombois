@@ -24,13 +24,19 @@ export function QuizRunner({
   questions,
   usesPhotoEssay,
   initialAccepted,
+  lockedAnswers,
 }: {
   quizId: string;
   questions: QuestionForStudent[];
   usesPhotoEssay: boolean;
   initialAccepted: string[]; // id soal URAIAN yang sudah punya foto diterima
+  // Jawaban objektif yang sudah tersimpan dari sebelumnya (mis. sebelum guru
+  // mereset satu dimensi kepribadian) — ditampilkan terkunci/tidak bisa
+  // diubah, cuma soal yang belum ada jawabannya (dimensi yang direset) yang
+  // bisa diisi ulang.
+  lockedAnswers: Record<string, string>;
 }) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(() => ({ ...lockedAnswers }));
   const [photoKind, setPhotoKind] = useState<Record<string, "TULISAN" | "GAMBAR">>({});
   const [photos, setPhotos] = useState<Record<string, PhotoState>>(() => {
     const init: Record<string, PhotoState> = {};
@@ -105,12 +111,14 @@ export function QuizRunner({
       {questions.map((q) => {
         const options: string[] = q.optionsJson ? JSON.parse(q.optionsJson) : [];
         const photo = photos[q.id];
+        const isLocked = Boolean(lockedAnswers[q.id]);
         return (
           <div className="card" key={q.id} style={{ marginBottom: 12 }}>
             <p>
               <strong>
                 {q.order}. {q.text}
               </strong>
+              {isLocked && <span className="hint" style={{ marginLeft: 8 }}>(sudah terjawab sebelumnya)</span>}
             </p>
             {q.type === "PILIHAN_GANDA" && (
               <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -120,6 +128,7 @@ export function QuizRunner({
                       type="radio"
                       name={q.id}
                       checked={answers[q.id] === OPTION_LETTERS[i]}
+                      disabled={isLocked}
                       onChange={() => setAnswer(q.id, OPTION_LETTERS[i])}
                     />
                     {OPTION_LETTERS[i]}. {opt}
@@ -131,7 +140,13 @@ export function QuizRunner({
               <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
                 {["BENAR", "SALAH"].map((v) => (
                   <label key={v} className="opt">
-                    <input type="radio" name={q.id} checked={answers[q.id] === v} onChange={() => setAnswer(q.id, v)} />
+                    <input
+                      type="radio"
+                      name={q.id}
+                      checked={answers[q.id] === v}
+                      disabled={isLocked}
+                      onChange={() => setAnswer(q.id, v)}
+                    />
                     {v}
                   </label>
                 ))}
@@ -190,6 +205,7 @@ export function QuizRunner({
                 <textarea
                   rows={4}
                   value={answers[q.id] ?? ""}
+                  disabled={isLocked}
                   onChange={(e) => setAnswer(q.id, e.target.value)}
                   placeholder="Tulis jawabanmu..."
                 />

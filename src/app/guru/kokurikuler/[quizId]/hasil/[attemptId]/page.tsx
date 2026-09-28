@@ -4,7 +4,7 @@ import { loadQuizForViewer, canGradeEssay, canWriteKokurikulerReading } from "@/
 import { AttemptDetail } from "@/components/kokurikuler/AttemptDetail";
 import { KokurikulerReadingForm, type IndicationItem } from "@/components/kokurikuler/KokurikulerReadingForm";
 import { EssayGradeForm } from "./EssayGradeForm";
-import { ResetAttemptButton } from "./ResetAttemptButton";
+import { ResetDimensionButton } from "./ResetDimensionButton";
 import { saveKokurikulerReadingAsGuru } from "./actions";
 
 export default async function GuruKokurikulerAttemptPage({
@@ -36,7 +36,11 @@ export default async function GuruKokurikulerAttemptPage({
         attempt={attempt}
         showDraftReading={canWriteReading}
         tema={quiz.tema}
-        retryAction={canGrade ? <ResetAttemptButton quizId={quiz.id} attemptId={attempt.id} /> : undefined}
+        renderDimensionRetry={
+          canGrade
+            ? (dimension) => <ResetDimensionButton quizId={quiz.id} attemptId={attempt.id} dimension={dimension} />
+            : undefined
+        }
       />
 
       {canGrade && hasEssayQuestions && (
