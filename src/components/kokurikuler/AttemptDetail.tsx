@@ -189,12 +189,6 @@ export function AttemptDetail({
           ) : (
             <p className="hint">Belum ada dimensi yang mencapai ambang 70% untuk dituliskan kesimpulannya.</p>
           )}
-          {conclusion.weakDimensions.length > 0 && (
-            <p className="hint" style={{ marginTop: 8 }}>
-              Dimensi di bawah 70% (siswa perlu mengulang untuk dimensi ini, belum dimasukkan ke
-              kesimpulan): {conclusion.weakDimensions.join(", ")}.
-            </p>
-          )}
           {conclusion.combinedScore !== null && (
             <p style={{ marginTop: 8 }}>
               <strong>Skor gabungan (rata-rata dimensi + nilai esai): {conclusion.combinedScore}</strong>
@@ -210,8 +204,9 @@ export function AttemptDetail({
           {conclusion.showRetryOption && (
             <div style={{ marginTop: 12 }}>
               <p className="hint" style={{ marginBottom: 8 }}>
-                Lebih dari 2 dimensi masih di bawah 70% — pertimbangkan memberi siswa kesempatan
-                mengulang kuis ini sebelum kesimpulan dipakai untuk rapot.
+                Dimensi {conclusion.weakDimensions.join(", ")} belum mencapai 70% — siswa perlu
+                mengulang kuis ini sebelum kesimpulan lengkap dan skor gabungan bisa dipakai untuk
+                rapot.
               </p>
               {retryAction}
             </div>

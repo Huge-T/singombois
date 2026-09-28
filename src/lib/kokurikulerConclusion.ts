@@ -10,12 +10,9 @@ import type { DimensionTally } from "@/lib/kokurikulerPersonality";
  */
 
 // Ambang batas "tercapai": >= ini dianggap mampu, deskripsi dimensinya
-// masuk kesimpulan. Di bawah ini dianggap "jelek", dimensinya dilewati.
+// masuk kesimpulan. Di bawah ini dianggap "jelek", dimensinya dilewati dan
+// siswa perlu mengulang kuis untuk memperbaiki dimensi itu.
 const ACHIEVED_THRESHOLD_PCT = 70;
-
-// Kalau dimensi "jelek" (di bawah ambang) lebih dari ini, tawarkan opsi
-// mengulang kuis alih-alih kesimpulan yang timpang.
-const MAX_WEAK_DIMENSIONS_BEFORE_RETRY = 2;
 
 // Kunci tema dicocokkan case-insensitive & trim, supaya "GEMATI"/"gemati "
 // dari input guru yang bebas ketik tetap kena.
@@ -34,7 +31,7 @@ export interface KokurikulerConclusionResult {
   text: string; // kosong bila tidak ada dimensi yang tercapai
   achievedDimensions: string[];
   weakDimensions: string[]; // di bawah ambang, deskripsinya sengaja tidak dimasukkan
-  showRetryOption: boolean; // > MAX_WEAK_DIMENSIONS_BEFORE_RETRY dimensi jelek
+  showRetryOption: boolean; // true kalau ada minimal satu dimensi di bawah ambang
   // Skor gabungan (bahan nilai rapot) — hanya terisi kalau SEMUA dimensi yang
   // dilacak sudah >= ambang DAN nilai esai sudah dinilai guru. Rumus: rata-rata
   // persentase seluruh dimensi, dirata-rata lagi dengan nilai esai.
@@ -78,7 +75,7 @@ export function generateKokurikulerConclusion(
     text: sentences.join(" "),
     achievedDimensions,
     weakDimensions,
-    showRetryOption: weakDimensions.length > MAX_WEAK_DIMENSIONS_BEFORE_RETRY,
+    showRetryOption: weakDimensions.length > 0,
     combinedScore,
   };
 }
