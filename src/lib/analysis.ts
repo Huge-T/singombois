@@ -164,7 +164,12 @@ function detectMarginColumn(rgb: RgbImage): number | null {
       const dr = data[o] - MARGIN_COLOR[0];
       const dg = data[o + 1] - MARGIN_COLOR[1];
       const db = data[o + 2] - MARGIN_COLOR[2];
-      if (Math.sqrt(dr * dr + dg * dg + db * db) < 30) matches++;
+      // tolerance=30 (v1) gagal hampir total di foto asli (diuji ke 12 foto
+      // produksi yang gagal: skor terbaik ~0.00-0.01 semua). 60 memulihkan
+      // sekitar separuhnya. Risiko positif-palsu tetap dijaga oleh ambang
+      // bestScore>0.4 di bawah — kertas/tinta putih-abu tidak akan konsisten
+      // "merah muda" di 40%+ tinggi satu kolom penuh walau tolerance dilonggarkan.
+      if (Math.sqrt(dr * dr + dg * dg + db * db) < 60) matches++;
     }
     const score = matches / height;
     if (score > bestScore) {
@@ -218,7 +223,10 @@ export async function extractFeatures(
     const dr = rgb.data[o] - RULE_COLOR[0];
     const dg = rgb.data[o + 1] - RULE_COLOR[1];
     const db = rgb.data[o + 2] - RULE_COLOR[2];
-    const nearRule = Math.sqrt(dr * dr + dg * dg + db * db) < 40;
+    // Disamakan dengan tolerance detectRuledLines (lihat vision.ts) supaya
+    // pixel garis yang warnanya sama-sama bergeser dari cetakan tetap konsisten
+    // dianggap "garis", bukan malah lolos jadi tinta di sini.
+    const nearRule = Math.sqrt(dr * dr + dg * dg + db * db) < 42;
     if (!nearRule) mask[i] = 1;
   }
 
