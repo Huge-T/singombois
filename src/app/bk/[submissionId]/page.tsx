@@ -5,6 +5,7 @@ import type { AspectScore } from "@/lib/rubric";
 import type { RawFeatures } from "@/lib/analysis";
 import { GESTALT_VERSION, TEKANAN_INFO, interpretGestalt } from "@/lib/gestalt";
 import { ReadingForm } from "./ReadingForm";
+import { ReprocessButton } from "./ReprocessButton";
 import type { StrengthItem } from "./actions";
 
 export default async function BkReadingPage({ params }: { params: Promise<{ submissionId: string }> }) {
@@ -71,6 +72,8 @@ export default async function BkReadingPage({ params }: { params: Promise<{ subm
               <p style={{ fontSize: 13, color: "var(--graphite)" }}>Tidak ada berkas.</p>
             )}
           </div>
+
+          {artifact?.kind === "GAMBAR" && <ReprocessButton submissionId={submissionId} />}
 
           {gestaltResults && (
             <div className="rev-side" style={{ marginBottom: 16 }}>
