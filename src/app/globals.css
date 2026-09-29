@@ -786,6 +786,9 @@ section.bagian {
 
 /* Dialog detail galeri foto kegiatan (native <dialog>) */
 .giat-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: min(680px, 92vw);
   max-height: 84vh;
   border: 1.5px solid var(--tinta);
@@ -836,6 +839,9 @@ section.bagian {
 
 /* Dialog video panduan (sama pola dengan .giat-dialog, lebih lebar) */
 .video-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: min(880px, 94vw);
   max-height: 90vh;
   border: 1.5px solid var(--tinta);
