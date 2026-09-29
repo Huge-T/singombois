@@ -1,19 +1,17 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { cohensKappa, kappaHealthLabel, scoreBand } from "@/lib/kappa";
 
 export default async function RingkasanPage() {
   const session = await auth();
   const schoolId = session!.user.schoolId;
 
-  const [studentCount, pendingConsent, openSessions, submittedCount, allReviews, readingQueue, readingPublished, openTickets] =
+  const [studentCount, pendingConsent, openSessions, submittedCount, readingQueue, readingPublished, openTickets] =
     await Promise.all([
       prisma.student.count({ where: { schoolId, archivedAt: null } }),
       prisma.student.count({ where: { schoolId, consentStatus: "PENDING" } }),
       prisma.session.count({ where: { class: { schoolId }, status: "OPEN" } }),
       prisma.submission.count({ where: { student: { schoolId }, submittedAt: { not: null } } }),
-      prisma.teacherReview.findMany({ where: { score: { submission: { student: { schoolId } } } } }),
       prisma.submission.count({
         where: {
           student: { schoolId },
@@ -25,9 +23,6 @@ export default async function RingkasanPage() {
       prisma.characterReading.count({ where: { submission: { student: { schoolId } }, status: "PUBLISHED" } }),
       prisma.consultTicket.count({ where: { student: { schoolId }, status: "OPEN" } }),
     ]);
-
-  const kappa = cohensKappa(allReviews.map((r) => [scoreBand(r.machineValue), scoreBand(r.teacherValue)]));
-  const health = kappaHealthLabel(kappa);
 
   return (
     <div>
@@ -48,13 +43,6 @@ export default async function RingkasanPage() {
         <div className="metric">
           <p className="metric-k">LEMBAR TERKUMPUL</p>
           <p className="metric-v">{submittedCount}</p>
-        </div>
-        <div className="metric">
-          <p className="metric-k">κ MESIN-GURU</p>
-          <p className="metric-v">{kappa === null ? "-" : kappa.toFixed(2)}</p>
-          <p className={`metric-d ${health.tone === "bad" ? "down" : health.tone === "ok" ? "up" : ""}`}>
-            {health.label}
-          </p>
         </div>
       </div>
 
