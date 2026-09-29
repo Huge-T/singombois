@@ -74,3 +74,12 @@ export function dokumen() {
 export function profilSingoMbois(): string | null {
   return publicAsset("dokumen/profil-singo-mbois.pdf");
 }
+
+/**
+ * Video panduan pemakaian situs, untuk tombol popup di hero. Berkasnya
+ * (~190MB) disimpan di Vercel Blob, bukan public/, karena GitHub menolak
+ * berkas di atas 100MB kalau ikut di-commit.
+ */
+export function videoPanduanUrl(): string | null {
+  return "https://iqschpthdktp2lfx.public.blob.vercel-storage.com/panduan/tutorial-website-singo-mbois.mp4";
+}

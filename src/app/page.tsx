@@ -6,8 +6,9 @@ import { DemoKemiringan } from "@/components/DemoKemiringan";
 import { BarChart } from "@/components/BarChart";
 import { StatCounter } from "@/components/StatCounter";
 import { CONTACTS } from "@/content/team";
-import { dokumen, profilSingoMbois } from "@/content/assets";
+import { dokumen, profilSingoMbois, videoPanduanUrl } from "@/content/assets";
 import { ActivityBrowser } from "@/components/ActivityBrowser";
+import { VideoPanduanModal } from "@/components/VideoPanduanModal";
 import { getRecentActivities } from "@/lib/activities";
 import {
   getImpactStats,
@@ -110,6 +111,7 @@ export default async function HomePage() {
               <a className="tombol tombol-kedua" href="#berkas">
                 Buka buku panduan
               </a>
+              {videoPanduanUrl() && <VideoPanduanModal url={videoPanduanUrl()!} />}
               {profilSingoMbois() && (
                 <a className="tombol tombol-kedua" href={profilSingoMbois()!} target="_blank" rel="noreferrer">
                   Profil SINGO MBOIS
