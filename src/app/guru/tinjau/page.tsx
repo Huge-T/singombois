@@ -20,6 +20,11 @@ export default async function TinjauListPage() {
 
   const pending = submissions.filter((s) => s.scores[0] && s.scores[0].teacherReviews.length === 0);
   const done = submissions.filter((s) => s.scores[0] && s.scores[0].teacherReviews.length > 0);
+  // Submission dengan jawaban berupa Gambar tidak pernah punya Score (skor
+  // kerapian tulisan tidak berlaku untuk gambar — lihat /api/upload), jadi
+  // sebelumnya lolos dari kedua filter di atas dan hilang sama sekali dari
+  // antrean ini walau siswanya sudah mengumpulkan. Tampilkan terpisah.
+  const noScore = submissions.filter((s) => !s.scores[0]);
 
   return (
     <div>
@@ -51,6 +56,25 @@ export default async function TinjauListPage() {
           </Link>
         </div>
       ))}
+
+      {noScore.length > 0 && (
+        <>
+          <p className="tbl-k" style={{ marginTop: 28 }}>
+            SUDAH DIKUMPULKAN, TANPA SKOR TEKNIS ({noScore.length})
+          </p>
+          <p style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 12 }}>
+            Jawaban berupa gambar — skor kerapian tulisan tidak berlaku. Dibaca lewat menu Guru BK,
+            bukan di sini.
+          </p>
+          {noScore.map((s) => (
+            <div className="row dim" key={s.id}>
+              <span className="row-n">{s.student.name}</span>
+              <span style={{ fontSize: 12.5 }}>{s.session.label}</span>
+              <span className="hint">Gambar</span>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }

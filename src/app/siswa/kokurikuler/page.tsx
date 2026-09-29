@@ -13,7 +13,7 @@ export default async function SiswaKokurikulerListPage() {
       status: "OPEN",
       OR: [{ targetedStudents: { none: {} } }, { targetedStudents: { some: { studentId: student.id } } }],
     },
-    include: { attempts: { where: { studentId: student.id } } },
+    include: { attempts: { where: { studentId: student.id }, include: { answers: true } } },
     orderBy: { opensAt: "desc" },
   });
 
@@ -28,6 +28,12 @@ export default async function SiswaKokurikulerListPage() {
       {quizzes.map((q) => {
         const attempt = q.attempts[0];
         const done = Boolean(attempt?.submittedAt);
+        // Attempt ada, belum dikumpulkan, tapi sudah punya jawaban tersimpan
+        // — ini bukan "belum dikerjakan" beneran, tapi kuis yang direset
+        // sebagian oleh guru (lihat resetKokurikulerDimensionCore) karena
+        // salah satu dimensinya di bawah ambang. Bedakan labelnya supaya
+        // siswa tidak bingung mengira belum pernah mulai sama sekali.
+        const needsRedo = !done && Boolean(attempt) && attempt!.answers.length > 0;
         return (
           <div key={q.id} className="card" style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -38,7 +44,7 @@ export default async function SiswaKokurikulerListPage() {
                 </p>
               </div>
               <span className={`pill ${done ? "pill-ok" : "pill-mark"}`}>
-                {done ? "SUDAH DIKUMPULKAN" : "BELUM DIKERJAKAN"}
+                {done ? "SUDAH DIKUMPULKAN" : needsRedo ? "HASIL KURANG MAKSIMAL, KERJAKAN KEMBALI" : "BELUM DIKERJAKAN"}
               </span>
             </div>
             <div style={{ marginTop: 14 }}>
