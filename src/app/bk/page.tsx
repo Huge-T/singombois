@@ -2,7 +2,12 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export default async function BkAntreanPage() {
+export default async function BkAntreanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ jenis?: string }>;
+}) {
+  const { jenis } = await searchParams;
   const session = await auth();
   const schoolId = session!.user.schoolId;
 
@@ -24,9 +29,17 @@ export default async function BkAntreanPage() {
     orderBy: { submittedAt: "desc" },
   });
 
-  const pending = submissions.filter((s) => !s.characterReading);
-  const done = submissions.filter((s) => s.characterReading?.status === "PUBLISHED");
-  const drafted = submissions.filter((s) => s.characterReading?.status === "DRAFT");
+  // Sesi Screening (Gestalt, Level LOW/MID/HIGH) dan sesi literasi rutin
+  // mingguan sebelumnya digabung jadi satu daftar panjang tanpa filter —
+  // dipisah lewat tab jenis=gestalt|literasi (default: semua) supaya BK
+  // bisa fokus ke satu jenis dulu.
+  const bySession = jenis
+    ? submissions.filter((s) => (jenis === "gestalt" ? Boolean(s.session.storyPromptId) : !s.session.storyPromptId))
+    : submissions;
+
+  const pending = bySession.filter((s) => !s.characterReading);
+  const done = bySession.filter((s) => s.characterReading?.status === "PUBLISHED");
+  const drafted = bySession.filter((s) => s.characterReading?.status === "DRAFT");
 
   // Progres level Gestalt per siswa: level dianggap selesai bila ada submission
   // sesi Gestalt di level itu dengan pembacaan BK yang sudah terbit.
@@ -54,6 +67,18 @@ export default async function BkAntreanPage() {
         Lembar tulisan dan gambar yang siswa unggah, menunggu dibaca dengan fokus pada potensi
         positif. Ini terpisah dari skor teknis literasi yang ditinjau wali kelas.
       </p>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <Link href="/bk" className={`btn btn-sm ${!jenis ? "" : "btn-ghost"}`}>
+          Semua
+        </Link>
+        <Link href="/bk?jenis=gestalt" className={`btn btn-sm ${jenis === "gestalt" ? "" : "btn-ghost"}`}>
+          Screening (Gestalt)
+        </Link>
+        <Link href="/bk?jenis=literasi" className={`btn btn-sm ${jenis === "literasi" ? "" : "btn-ghost"}`}>
+          Literasi rutin
+        </Link>
+      </div>
 
       {readyToConclude.length > 0 && (
         <>
