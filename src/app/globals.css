@@ -1970,6 +1970,58 @@ footer.kaki a {
   padding: 22px 24px;
 }
 
+/* Kartu kelas (koordinator/siswa) — tiap kelas jadi satu blok bertepi jelas,
+   dan daftar siswanya jadi tabel rapi (bukan flex-row lepas tanpa header
+   kolom), supaya kelas yang dibuka tidak jadi tumpukan teks datar. */
+.siswa-kelas {
+  border: 1px solid var(--garis);
+  border-radius: 4px;
+  background: var(--kertas-terang);
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+.siswa-roster {
+  margin-top: 10px;
+  border-top: 1px solid var(--garis);
+  padding-top: 4px;
+}
+.siswa-roster-head {
+  display: grid;
+  grid-template-columns: 1fr 130px 100px auto;
+  gap: 12px;
+  padding: 8px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-lembut);
+  border-bottom: 1.5px solid var(--tinta);
+}
+.siswa-row {
+  display: grid;
+  grid-template-columns: 1fr 130px 100px auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--garis);
+}
+.siswa-row:nth-child(even) {
+  background: var(--kertas);
+}
+.siswa-row:hover {
+  background: var(--singo-lembut);
+}
+@media (max-width: 700px) {
+  .siswa-roster-head {
+    display: none;
+  }
+  .siswa-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 12px 6px;
+  }
+}
+
 /* kolom konten generik (halaman publik ber-pagehead & toolbar cetak) */
 .sheet {
   max-width: 1000px;

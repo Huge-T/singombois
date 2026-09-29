@@ -45,7 +45,7 @@ export function ClassSection({
   const pendingCount = students.filter((s) => s.consentStatus === "PENDING").length;
 
   return (
-    <div id={`kelas-${classId}`} style={{ marginBottom: 10, scrollMarginTop: 75 }}>
+    <div id={`kelas-${classId}`} className="siswa-kelas" style={{ scrollMarginTop: 75 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <button
           type="button"
@@ -84,32 +84,29 @@ export function ClassSection({
       </div>
 
       {open && (
-        <div style={{ marginTop: 4 }}>
+        <div className="siswa-roster">
           {students.length === 0 && <p className="hint">Belum ada siswa di kelas ini.</p>}
+          {students.length > 0 && (
+            <div className="siswa-roster-head">
+              <span>Nama</span>
+              <span>NISN</span>
+              <span>Persetujuan</span>
+              <span>Aksi</span>
+            </div>
+          )}
           {students.map((s) => {
             const consent = CONSENT_LABEL[s.consentStatus];
             return (
-              <div
-                key={s.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "9px 0",
-                  borderBottom: "1px solid var(--rule-soft)",
-                }}
-              >
-                <span className="row-n" style={{ flex: 1 }}>
-                  {s.name}
-                </span>
-                <span style={{ fontSize: 12, fontFamily: "var(--data)", color: "var(--graphite)", width: 130 }}>
-                  NISN {s.nisn}
-                </span>
-                <span className={`pill ${consent.tone}`} style={{ width: 90, textAlign: "center" }}>
+              <div key={s.id} className="siswa-row">
+                <span className="row-n">{s.name}</span>
+                <span style={{ fontSize: 12, fontFamily: "var(--data)", color: "var(--graphite)" }}>{s.nisn}</span>
+                <span className={`pill ${consent.tone}`} style={{ justifySelf: "start" }}>
                   {consent.label}
                 </span>
-                <ConsentButtons studentId={s.id} status={s.consentStatus} teachers={teachers} />
-                <DeleteStudentButton studentId={s.id} name={s.name} />
+                <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <ConsentButtons studentId={s.id} status={s.consentStatus} teachers={teachers} />
+                  <DeleteStudentButton studentId={s.id} name={s.name} />
+                </span>
               </div>
             );
           })}
