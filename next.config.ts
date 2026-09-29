@@ -14,9 +14,12 @@ const nextConfig: NextConfig = {
   // serverExternalPackages saja belum cukup: terkonfirmasi lewat endpoint
   // diagnostik bahwa file .so asli libvips (nested di @img/sharp-libvips-*)
   // tetap tidak ikut ter-trace ke bundle fungsi Vercel (ERR_DLOPEN_FAILED).
-  // Paksa sertakan folder sharp & @img penuh untuk semua route API.
+  // Awalnya cuma "/api/**/*" — ternyata server action (bukan route API) yang
+  // makan sharp (mis. reprocessArtifactAsTulisan di bk/[submissionId]/actions.ts)
+  // dibundel di path lain dan tidak ikut ke-cover, jadi 500 generik yang sama.
+  // Diperluas ke semua route supaya server action mana pun yang butuh sharp aman.
   outputFileTracingIncludes: {
-    "/api/**/*": ["./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
+    "/**/*": ["./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
   },
 };
 
