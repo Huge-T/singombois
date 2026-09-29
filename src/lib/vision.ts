@@ -182,23 +182,11 @@ export function connectedComponents(
  * Detects near-horizontal ruled lines by scanning rows for a high fraction of
  * pixels matching a target color (the printed rule color on the worksheet).
  * Returns the row indices of detected lines, in order.
- *
- * tolerance=28 (v1) was tuned against a scanner-flat reference image and
- * turned out too tight for real phone photos: checked against 285 production
- * submissions that failed calibration, most had their true rule lines shifted
- * ~30-40 in RGB distance from the printed color (camera white balance/exposure/
- * shadow, not skew — row-match fractions were already high once tolerance
- * widened, at the SAME row positions). tolerance=42 recovered ~45% of those
- * (9/20 sampled) with zero regressions on the 22 previously-succeeding photos
- * (their line counts only went up, never spurious). Going further (48) gained
- * nothing more on the same sample — the rest need a much looser match (~90)
- * that risks false-positive lines from plain paper, so they're left correctly
- * "tak terukur" rather than given a guessed calibration.
  */
 export function detectRuledLines(
   img: RgbImage,
   target: [number, number, number],
-  tolerance = 42,
+  tolerance = 28,
   minRowMatchFraction = 0.5
 ): number[] {
   const { data, width, height } = img;
