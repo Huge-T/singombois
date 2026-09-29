@@ -22,12 +22,25 @@ export default async function BkAntreanPage({
     },
     include: {
       student: true,
-      session: true,
+      session: { include: { class: true } },
       artifacts: { orderBy: { createdAt: "desc" }, take: 1 },
       characterReading: true,
     },
     orderBy: { submittedAt: "desc" },
   });
+
+  // Kelompokkan per kelas — daftar 200+ lembar tanpa pengelompokan menyulitkan
+  // BK mencari kelas tertentu. Diurutkan nama kelas (VII-A < VIII-A < IX-C
+  // kebetulan ikut terurut benar secara string karena awalan angka romawinya).
+  function groupByClass<T extends { session: { class: { name: string } } }>(items: T[]): [string, T[]][] {
+    const byClass = new Map<string, T[]>();
+    for (const item of items) {
+      const name = item.session.class.name;
+      if (!byClass.has(name)) byClass.set(name, []);
+      byClass.get(name)!.push(item);
+    }
+    return [...byClass.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }
 
   // Sesi Screening (Gestalt, Level LOW/MID/HIGH) dan sesi literasi rutin
   // mingguan sebelumnya digabung jadi satu daftar panjang tanpa filter —
@@ -111,17 +124,24 @@ export default async function BkAntreanPage({
           Tidak ada lembar yang menunggu.
         </p>
       )}
-      {pending.map((s) => (
-        <div className="row" key={s.id}>
-          <span className="row-n">{s.student.name}</span>
-          <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>
-            {s.session.label}
-            {s.session.storyPromptId ? ` · Level ${s.session.level}` : ""} ·{" "}
-            {s.artifacts[0]?.kind === "GAMBAR" ? "Gambar" : "Tulisan"}
-          </span>
-          <Link href={`/bk/${s.id}`} className="btn btn-sm">
-            Baca
-          </Link>
+      {groupByClass(pending).map(([className, items]) => (
+        <div key={className} style={{ marginBottom: 18 }}>
+          <p className="hint" style={{ fontWeight: 700, marginBottom: 6 }}>
+            KELAS {className} ({items.length})
+          </p>
+          {items.map((s) => (
+            <div className="row" key={s.id}>
+              <span className="row-n">{s.student.name}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>
+                {s.session.label}
+                {s.session.storyPromptId ? ` · Level ${s.session.level}` : ""} ·{" "}
+                {s.artifacts[0]?.kind === "GAMBAR" ? "Gambar" : "Tulisan"}
+              </span>
+              <Link href={`/bk/${s.id}`} className="btn btn-sm">
+                Baca
+              </Link>
+            </div>
+          ))}
         </div>
       ))}
 
@@ -130,13 +150,20 @@ export default async function BkAntreanPage({
           <p className="tbl-k" style={{ marginTop: 28 }}>
             DRAF BELUM DIPUBLIKASI ({drafted.length})
           </p>
-          {drafted.map((s) => (
-            <div className="row" key={s.id}>
-              <span className="row-n">{s.student.name}</span>
-              <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>{s.session.label}</span>
-              <Link href={`/bk/${s.id}`} className="btn btn-sm">
-                Lanjutkan
-              </Link>
+          {groupByClass(drafted).map(([className, items]) => (
+            <div key={className} style={{ marginBottom: 18 }}>
+              <p className="hint" style={{ fontWeight: 700, marginBottom: 6 }}>
+                KELAS {className} ({items.length})
+              </p>
+              {items.map((s) => (
+                <div className="row" key={s.id}>
+                  <span className="row-n">{s.student.name}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>{s.session.label}</span>
+                  <Link href={`/bk/${s.id}`} className="btn btn-sm">
+                    Lanjutkan
+                  </Link>
+                </div>
+              ))}
             </div>
           ))}
         </>
@@ -145,16 +172,23 @@ export default async function BkAntreanPage({
       <p className="tbl-k" style={{ marginTop: 28 }}>
         SUDAH DIPUBLIKASIKAN ({done.length}) · 15 TERBARU DITAMPILKAN
       </p>
-      {done.slice(0, 15).map((s) => (
-        <div className="row dim" key={s.id}>
-          <span className="row-n">{s.student.name}</span>
-          <span style={{ fontSize: 12.5 }}>
-            {s.session.label}
-            {s.session.storyPromptId ? ` · Level ${s.session.level}` : ""}
-          </span>
-          <Link href={`/bk/${s.id}`} className="btn btn-ghost btn-sm">
-            Lihat
-          </Link>
+      {groupByClass(done.slice(0, 15)).map(([className, items]) => (
+        <div key={className} style={{ marginBottom: 18 }}>
+          <p className="hint" style={{ fontWeight: 700, marginBottom: 6 }}>
+            KELAS {className} ({items.length})
+          </p>
+          {items.map((s) => (
+            <div className="row dim" key={s.id}>
+              <span className="row-n">{s.student.name}</span>
+              <span style={{ fontSize: 12.5 }}>
+                {s.session.label}
+                {s.session.storyPromptId ? ` · Level ${s.session.level}` : ""}
+              </span>
+              <Link href={`/bk/${s.id}`} className="btn btn-ghost btn-sm">
+                Lihat
+              </Link>
+            </div>
+          ))}
         </div>
       ))}
     </div>

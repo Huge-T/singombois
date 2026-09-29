@@ -12,9 +12,19 @@ export default async function BkKokurikulerQueuePage() {
       quiz: { class: { schoolId } },
       OR: [{ reading: null }, { reading: { status: "DRAFT" } }],
     },
-    include: { student: true, quiz: true, reading: true },
+    include: { student: true, quiz: { include: { class: true } }, reading: true },
     orderBy: { submittedAt: "asc" },
   });
+
+  // Kelompokkan per kelas, sama seperti Antrean pembacaan literasi — lebih
+  // gampang dicari kalau BK mau fokus ke satu kelas dulu.
+  const byClass = new Map<string, typeof attempts>();
+  for (const a of attempts) {
+    const name = a.quiz.class.name;
+    if (!byClass.has(name)) byClass.set(name, []);
+    byClass.get(name)!.push(a);
+  }
+  const groups = [...byClass.entries()].sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <div>
@@ -24,15 +34,22 @@ export default async function BkKokurikulerQueuePage() {
 
       {attempts.length === 0 && <p className="hint">Antrean kosong.</p>}
 
-      {attempts.map((a) => (
-        <div className="card" key={a.id} style={{ marginBottom: 12 }}>
-          <p>
-            <strong>{a.student.name}</strong> <span className="hint">· {a.quiz.label}</span>{" "}
-            {a.reading?.status === "DRAFT" && <span className="pill">Draf ada</span>}
+      {groups.map(([className, items]) => (
+        <div key={className} style={{ marginBottom: 24 }}>
+          <p className="tbl-k">
+            KELAS {className} ({items.length})
           </p>
-          <Link className="btn btn-ghost btn-sm" href={`/bk/kokurikuler/${a.id}`}>
-            Baca &amp; tulis analisis
-          </Link>
+          {items.map((a) => (
+            <div className="card" key={a.id} style={{ marginBottom: 12 }}>
+              <p>
+                <strong>{a.student.name}</strong> <span className="hint">· {a.quiz.label}</span>{" "}
+                {a.reading?.status === "DRAFT" && <span className="pill">Draf ada</span>}
+              </p>
+              <Link className="btn btn-ghost btn-sm" href={`/bk/kokurikuler/${a.id}`}>
+                Baca &amp; tulis analisis
+              </Link>
+            </div>
+          ))}
         </div>
       ))}
     </div>
