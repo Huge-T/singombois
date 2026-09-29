@@ -29,6 +29,7 @@ export function CreateQuizForm({
   const [state, formAction, pending] = useActionState(createKokurikulerQuiz, initialState);
   const [classIds, setClassIds] = useState<string[]>(classes[0] ? [classes[0].id] : []);
   const [pilihSiswa, setPilihSiswa] = useState(false);
+  const [uploadLangsung, setUploadLangsung] = useState(false);
 
   const classStudents = useMemo(
     () => (classIds.length === 1 ? students.filter((s) => s.classId === classIds[0]) : []),
@@ -129,6 +130,24 @@ export function CreateQuizForm({
       </div>
 
       <div className="field">
+        <label className="opt" style={{ marginBottom: 0 }}>
+          <input
+            type="checkbox"
+            name="uploadLangsung"
+            value="1"
+            checked={uploadLangsung}
+            onChange={(e) => setUploadLangsung(e.target.checked)}
+          />
+          Langsung upload foto (tanpa soal pilihan ganda)
+        </label>
+        <p className="hint">
+          Kuis langsung punya satu soal uraian foto, tanpa perlu unggah CSV soal — untuk uji coba cepat
+          analisis foto (mis. demo ke juri). Soal pilihan ganda/benar-salah bisa ditambah belakangan lewat
+          CSV kalau perlu.
+        </p>
+      </div>
+
+      <div className="field">
         <label htmlFor="opensAt">Dibuka</label>
         <input id="opensAt" name="opensAt" type="datetime-local" required />
       </div>
@@ -142,7 +161,9 @@ export function CreateQuizForm({
           ? "Membuat..."
           : classIds.length > 1
             ? `Buat ${classIds.length} kuis untuk tiap kelas`
-            : "Buat kuis & lanjut unggah soal"}
+            : uploadLangsung
+              ? "Buat kuis, siap dibuka"
+              : "Buat kuis & lanjut unggah soal"}
       </button>
     </form>
   );

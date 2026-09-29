@@ -12,6 +12,7 @@ const schema = z.object({
   worksheetTemplateId: z.string().min(1),
   opensAt: z.string().min(1),
   closesAt: z.string().min(1),
+  uploadLangsung: z.string().optional(),
 });
 
 export interface CreateQuizState {
@@ -69,6 +70,8 @@ export async function createKokurikulerQuiz(_prev: CreateQuizState, formData: Fo
     return { error: "Waktu tutup harus setelah waktu buka" };
   }
 
+  const uploadLangsung = d.uploadLangsung === "1";
+
   const createdQuizzes = await Promise.all(
     classIds.map((classId) =>
       prisma.kokurikulerQuiz.create({
@@ -83,13 +86,27 @@ export async function createKokurikulerQuiz(_prev: CreateQuizState, formData: Fo
           status: "DRAFT",
           targetedStudents:
             studentIds.length > 0 ? { create: studentIds.map((id) => ({ studentId: id })) } : undefined,
+          // "Upload langsung": kuis siap dibuka begitu dibuat, tanpa unggah
+          // CSV — untuk uji coba cepat analisis foto (mis. demo ke juri).
+          questions: uploadLangsung
+            ? {
+                create: [
+                  {
+                    order: 1,
+                    type: "URAIAN",
+                    text: "Foto lembar jawaban/karyamu",
+                  },
+                ],
+              }
+            : undefined,
         },
       })
     )
   );
 
-  // Satu kelas: langsung ke halaman kuis untuk unggah soal seperti alur lama.
-  // Beberapa kelas sekaligus: tiap kuis butuh soalnya sendiri-sendiri, jadi
+  // Upload langsung: soal sudah ada, tidak perlu unggah CSV — cukup dibuka.
+  // Satu kelas biasa: langsung ke halaman kuis untuk unggah soal seperti alur
+  // lama. Beberapa kelas sekaligus: tiap kuis butuh soalnya sendiri-sendiri,
   // arahkan ke daftar supaya guru bisa buka & unggah CSV per kuis satu-satu.
   if (createdQuizzes.length === 1) {
     redirect(`/guru/kokurikuler/${createdQuizzes[0].id}`);

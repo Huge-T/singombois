@@ -123,6 +123,10 @@ export function SessionRunner({
 }) {
   const router = useRouter();
   const isGestalt = Boolean(story);
+  // Mode "Upload langsung" (guru/sesi/baru): tidak ada teks/audio/gambar
+  // bercerita sama sekali — langkahnya cuma unggah, dipakai untuk uji coba
+  // cepat analisis foto (mis. demo ke juri) tanpa perlu menyiapkan materi.
+  const isUploadOnly = !isGestalt && !reading && !listening;
 
   // Urutan langkah dinamis (Gestalt): baca + soal baca dulu (bila ada teks),
   // lalu simak + soal simak (bila ada audio), gambar bercerita, unggah.
@@ -147,12 +151,14 @@ export function SessionRunner({
         { key: "cerita", label: "Gambar" },
         { key: "unggah", label: "Unggah" },
       ]
-    : [
-        { key: "baca", label: "Baca" },
-        { key: "simak", label: "Simak" },
-        { key: "tulis", label: "Tulis" },
-        { key: "unggah", label: "Unggah" },
-      ];
+    : isUploadOnly
+      ? [{ key: "unggah", label: "Unggah" }]
+      : [
+          { key: "baca", label: "Baca" },
+          { key: "simak", label: "Simak" },
+          { key: "tulis", label: "Tulis" },
+          { key: "unggah", label: "Unggah" },
+        ];
 
   const [step, setStep] = useState<Step>(steps[0].key);
   const readStart = useRef(0);

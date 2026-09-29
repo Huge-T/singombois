@@ -16,7 +16,7 @@ interface StudentOption {
   classId: string;
 }
 
-type Mode = "LOW" | "MIDDLE" | "HIGH" | "UMUM";
+type Mode = "LOW" | "MIDDLE" | "HIGH" | "UMUM" | "UPLOAD_LANGSUNG";
 
 const MODE_INFO: Record<Mode, { label: string; hint: string }> = {
   LOW: {
@@ -34,6 +34,10 @@ const MODE_INFO: Record<Mode, { label: string; hint: string }> = {
   UMUM: {
     label: "Literasi umum",
     hint: "Sesi baca-simak-tulis lama dengan kuis pilihan ganda.",
+  },
+  UPLOAD_LANGSUNG: {
+    label: "Upload langsung",
+    hint: "Tanpa teks bacaan/audio/gambar bercerita — siswa langsung foto lembar kerja (tulisan atau gambar). Untuk uji coba cepat analisis foto, mis. demo ke juri.",
   },
 };
 
@@ -61,7 +65,7 @@ export function CreateSessionForm({
 
   const needsText = mode === "LOW" || mode === "UMUM";
   const needsAudio = mode === "LOW" || mode === "MIDDLE" || mode === "HIGH" || mode === "UMUM";
-  const needsStory = mode !== "UMUM";
+  const needsStory = mode !== "UMUM" && mode !== "UPLOAD_LANGSUNG";
 
   const filteredTexts = useMemo(
     () => (mode === "UMUM" ? texts.filter((t) => !t.level) : texts.filter((t) => t.level === mode)),
@@ -104,7 +108,18 @@ export function CreateSessionForm({
 
       <div className="field">
         <label htmlFor="label">Nama sesi</label>
-        <input id="label" name="label" placeholder={mode === "UMUM" ? "Sesi 13 · Literasi VII-C" : `Screening Gestalt · ${MODE_INFO[mode].label}`} required />
+        <input
+          id="label"
+          name="label"
+          placeholder={
+            mode === "UMUM"
+              ? "Sesi 13 · Literasi VII-C"
+              : mode === "UPLOAD_LANGSUNG"
+                ? "Uji coba upload foto"
+                : `Screening Gestalt · ${MODE_INFO[mode].label}`
+          }
+          required
+        />
       </div>
 
       <div className="field">

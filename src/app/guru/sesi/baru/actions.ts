@@ -7,7 +7,7 @@ import { parseWibDateTimeLocal } from "@/lib/wibTime";
 import { z } from "zod";
 
 const schema = z.object({
-  mode: z.enum(["LOW", "MIDDLE", "HIGH", "UMUM"]),
+  mode: z.enum(["LOW", "MIDDLE", "HIGH", "UMUM", "UPLOAD_LANGSUNG"]),
   readingTextId: z.string().optional(),
   audioMaterialId: z.string().optional(),
   storyPromptId: z.string().optional(),
@@ -45,7 +45,9 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
   }
 
   // Kebutuhan materi per mode: Low = teks + audio + gambar bercerita;
-  // Middle/High = audio + gambar bercerita; Umum (literasi lama) = teks + audio.
+  // Middle/High = audio + gambar bercerita; Umum (literasi lama) = teks + audio;
+  // Upload langsung = tidak butuh materi apa pun, jadi sengaja tidak ada
+  // validasi untuknya di sini (langsung lolos ke pembuatan sesi).
   if (d.mode === "LOW" && (!d.readingTextId || !d.audioMaterialId || !d.storyPromptId)) {
     return { error: "Level Low membutuhkan teks bacaan, audio menyimak, dan gambar bercerita." };
   }
@@ -90,10 +92,10 @@ export async function createSession(_prev: CreateSessionState, formData: FormDat
       prisma.session.create({
         data: {
           classId,
-          level: d.mode === "UMUM" ? "LOW" : d.mode,
-          readingTextId: d.readingTextId || null,
-          audioMaterialId: d.audioMaterialId || null,
-          storyPromptId: d.mode === "UMUM" ? null : d.storyPromptId || null,
+          level: d.mode === "UMUM" || d.mode === "UPLOAD_LANGSUNG" ? "LOW" : d.mode,
+          readingTextId: d.mode === "UPLOAD_LANGSUNG" ? null : d.readingTextId || null,
+          audioMaterialId: d.mode === "UPLOAD_LANGSUNG" ? null : d.audioMaterialId || null,
+          storyPromptId: d.mode === "UMUM" || d.mode === "UPLOAD_LANGSUNG" ? null : d.storyPromptId || null,
           worksheetTemplateId: d.worksheetTemplateId,
           label: d.label,
           opensAt,
