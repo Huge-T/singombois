@@ -30,28 +30,30 @@ export default async function KegiatanPage() {
         <div key={year} style={{ marginBottom: 28 }}>
           <p className="tbl-k">{year} ({byYear.get(year)!.length})</p>
           {byYear.get(year)!.map((a) => (
-            <div className="row" key={a.id} style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <span className="row-n">{a.title}</span>
-                <span style={{ display: "block", fontSize: 12.5, color: "var(--ink-2)" }}>{a.category}</span>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                  {a.photos.map((p) => (
-                    <div key={p.id} style={{ position: "relative" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={p.url}
-                        alt={a.title}
-                        style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 3, border: "1px solid var(--edge)" }}
-                      />
-                      <DeletePhotoButton photoId={p.id} />
-                    </div>
-                  ))}
+            <div className="card" key={a.id} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+                <div>
+                  <span className="row-n">{a.title}</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "var(--ink-2)" }}>{a.category}</span>
                 </div>
-                <div style={{ marginTop: 10 }}>
-                  <AddPhotoForm activityId={a.id} />
-                </div>
+                <DeleteActivityButton activityId={a.id} title={a.title} />
               </div>
-              <DeleteActivityButton activityId={a.id} title={a.title} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                {a.photos.map((p) => (
+                  <div key={p.id} style={{ position: "relative" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.url}
+                      alt={a.title}
+                      style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 3, border: "1px solid var(--edge)" }}
+                    />
+                    <DeletePhotoButton photoId={p.id} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <AddPhotoForm activityId={a.id} />
+              </div>
             </div>
           ))}
         </div>

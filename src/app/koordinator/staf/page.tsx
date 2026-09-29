@@ -28,27 +28,29 @@ export default async function StafPage() {
         Kelas &amp; siswa.
       </p>
 
-      <p className="tbl-k">{staff.length} AKUN STAF</p>
-      {staff.map((s) => (
-        <div
-          key={s.id}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            padding: "9px 0",
-            borderBottom: "1px solid var(--rule-soft)",
-          }}
-        >
-          <span className="row-n" style={{ flex: 1 }}>
-            {s.name}
-          </span>
-          <span style={{ fontSize: 12.5, color: "var(--graphite)", flex: 1 }}>{s.email}</span>
-          <span className="pill" style={{ width: 120, textAlign: "center" }}>
-            {ROLE_LABEL[s.role] ?? s.role}
-          </span>
+      <div className="siswa-kelas">
+        <p className="tbl-k" style={{ margin: 0 }}>
+          {staff.length} AKUN STAF
+        </p>
+        <div className="siswa-roster">
+          {staff.length > 0 && (
+            <div className="siswa-roster-head" style={{ gridTemplateColumns: "1fr 1fr 130px" }}>
+              <span>Nama</span>
+              <span>Email</span>
+              <span>Peran</span>
+            </div>
+          )}
+          {staff.map((s) => (
+            <div key={s.id} className="siswa-row" style={{ gridTemplateColumns: "1fr 1fr 130px" }}>
+              <span className="row-n">{s.name}</span>
+              <span style={{ fontSize: 12.5, color: "var(--graphite)" }}>{s.email}</span>
+              <span className="pill" style={{ justifySelf: "start" }}>
+                {ROLE_LABEL[s.role] ?? s.role}
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       <details style={{ marginTop: 20 }}>
         <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--measure)" }}>

@@ -22,34 +22,33 @@ export default async function KelasPage() {
       <p className="sub">Status persetujuan wali murid menentukan apakah siswa bisa mengunggah lembar kerja.</p>
 
       {classes.map((c) => (
-        <div key={c.id} style={{ marginBottom: 28 }}>
-          <p className="tbl-k">{c.name.toUpperCase()} · {c.students.length} SISWA</p>
-          {c.students.map((s) => {
-            const consent = CONSENT_LABEL[s.consentStatus];
-            return (
-              <div
-                key={s.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "9px 0",
-                  borderBottom: "1px solid var(--rule-soft)",
-                }}
-              >
-                <span className="row-n" style={{ flex: 1 }}>
-                  {s.name}
-                </span>
-                <span style={{ fontSize: 12, fontFamily: "var(--data)", color: "var(--graphite)", width: 130 }}>
-                  NISN {s.nisn}
-                </span>
-                <span className={`pill ${consent.tone}`} style={{ width: 90, textAlign: "center" }}>
-                  {consent.label}
-                </span>
-                <ResetPinButton studentId={s.id} />
+        <div key={c.id} className="siswa-kelas">
+          <p className="tbl-k" style={{ margin: 0 }}>
+            {c.name.toUpperCase()} · {c.students.length} SISWA
+          </p>
+          <div className="siswa-roster">
+            {c.students.length > 0 && (
+              <div className="siswa-roster-head">
+                <span>Nama</span>
+                <span>NISN</span>
+                <span>Persetujuan</span>
+                <span>Aksi</span>
               </div>
-            );
-          })}
+            )}
+            {c.students.map((s) => {
+              const consent = CONSENT_LABEL[s.consentStatus];
+              return (
+                <div key={s.id} className="siswa-row">
+                  <span className="row-n">{s.name}</span>
+                  <span style={{ fontSize: 12, fontFamily: "var(--data)", color: "var(--graphite)" }}>{s.nisn}</span>
+                  <span className={`pill ${consent.tone}`} style={{ justifySelf: "start" }}>
+                    {consent.label}
+                  </span>
+                  <ResetPinButton studentId={s.id} />
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
