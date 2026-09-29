@@ -106,25 +106,92 @@ export function scoreAspects(features: RawFeatures): AspectScore[] {
   return aspects;
 }
 
+// Aspek yang punya rumus skor sungguhan (lihat scoreAspects di atas). "slant"
+// dan "scratchDensity" SENGAJA tidak masuk sini: scorer-nya masih stub
+// (`() => 0`), jadi kalau ikut dipakai untuk overall/fokus, keduanya akan
+// selalu "menang" sebagai aspek paling lemah begitu terukur — padahal itu
+// cuma angka 0 palsu, bukan hasil pengukuran yang buruk.
+const QUALITY_WEIGHTS: Record<string, number> = {
+  sizeConsistency: 0.3,
+  baselineDeviation: 0.25,
+  wordSpacingRatio: 0.25,
+  marginDeviation: 0.2,
+};
+
 /** Weighted overall Skor Kerapian — only from aspects that were actually measured (AN-2). */
 export function overallWritingQuality(aspects: AspectScore[]): number | null {
-  const weights: Record<string, number> = {
-    sizeConsistency: 0.3,
-    baselineDeviation: 0.25,
-    wordSpacingRatio: 0.25,
-    marginDeviation: 0.2,
-  };
-  const usable = aspects.filter((a) => a.measured && weights[a.key] !== undefined);
+  const usable = aspects.filter((a) => a.measured && QUALITY_WEIGHTS[a.key] !== undefined);
   if (usable.length === 0) return null;
 
-  const totalWeight = usable.reduce((s, a) => s + weights[a.key], 0);
-  const weighted = usable.reduce((s, a) => s + weights[a.key] * (a.score as number), 0);
+  const totalWeight = usable.reduce((s, a) => s + QUALITY_WEIGHTS[a.key], 0);
+  const weighted = usable.reduce((s, a) => s + QUALITY_WEIGHTS[a.key] * (a.score as number), 0);
   return Math.round(weighted / totalWeight);
 }
 
 /** Picks the single weakest measured aspect to surface as this week's focus (LAT-2: one at a time). */
 export function pickFocusAspect(aspects: AspectScore[]): AspectScore | null {
-  const measured = aspects.filter((a) => a.measured && a.score !== null);
+  const measured = aspects.filter((a) => a.measured && a.score !== null && QUALITY_WEIGHTS[a.key] !== undefined);
   if (measured.length === 0) return null;
   return measured.reduce((worst, a) => ((a.score as number) < (worst.score as number) ? a : worst));
+}
+
+export interface WritingQualitySummary {
+  level: "rapi" | "cukup" | "perlu-latihan" | "belum-cukup-data";
+  overall: number | null;
+  text: string;
+  strongest: AspectScore | null;
+  weakest: AspectScore | null;
+}
+
+/**
+ * Kesimpulan berbahasa awam dari RINCIAN KUALITAS TULISAN, dihitung dari
+ * aspek yang sama dengan overallWritingQuality (bukan indikasi
+ * karakter/kepribadian Gestalt — itu section terpisah dengan validitas
+ * yang berbeda, lihat src/lib/gestalt.ts).
+ */
+export function summarizeWritingQuality(aspects: AspectScore[]): WritingQualitySummary {
+  const usable = aspects.filter((a) => a.measured && QUALITY_WEIGHTS[a.key] !== undefined && a.score !== null);
+  const overall = overallWritingQuality(aspects);
+
+  if (usable.length === 0) {
+    return {
+      level: "belum-cukup-data",
+      overall: null,
+      text: "Belum ada aspek kerapian yang bisa diukur dari foto ini, jadi kesimpulan belum bisa dibuat. Coba unggah ulang dengan foto yang lebih terang, lurus, dan menampilkan garis lembar kerja secara utuh.",
+      strongest: null,
+      weakest: null,
+    };
+  }
+
+  const strongest = usable.reduce((best, a) => ((a.score as number) > (best.score as number) ? a : best));
+  const weakest = usable.reduce((worst, a) => ((a.score as number) < (worst.score as number) ? a : worst));
+
+  const o = overall ?? 0;
+  let level: WritingQualitySummary["level"];
+  let levelText: string;
+  if (o >= 80) {
+    level = "rapi";
+    levelText = "tergolong rapi";
+  } else if (o >= 60) {
+    level = "cukup";
+    levelText = "tergolong cukup rapi";
+  } else if (o >= 40) {
+    level = "perlu-latihan";
+    levelText = "masih perlu beberapa perbaikan";
+  } else {
+    level = "perlu-latihan";
+    levelText = "masih perlu banyak latihan";
+  }
+
+  let text = `Kualitas tulisan ${levelText}`;
+  if (strongest.key !== weakest.key) {
+    text += `. Bagian paling kuat: ${strongest.label.toLowerCase()}. Yang paling perlu dilatih: ${weakest.label.toLowerCase()}.`;
+  } else {
+    text += `, dilihat dari ${strongest.label.toLowerCase()}.`;
+  }
+  if (usable.length < Object.keys(QUALITY_WEIGHTS).length) {
+    text += ` (Baru ${usable.length} dari ${Object.keys(QUALITY_WEIGHTS).length} aspek yang bisa terbaca dari foto ini — sebagian lain belum cukup jelas untuk diukur, jadi kesimpulan ini masih gambaran awal.)`;
+  }
+
+  return { level, overall, text, strongest, weakest };
 }

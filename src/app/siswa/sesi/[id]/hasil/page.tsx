@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { AspectScore } from "@/lib/rubric";
+import { summarizeWritingQuality, type AspectScore } from "@/lib/rubric";
 import type { RawFeatures } from "@/lib/analysis";
 import { GESTALT_DISCLAIMER, GESTALT_VERSION, TEKANAN_INFO, interpretGestalt } from "@/lib/gestalt";
 import type { StrengthItem } from "@/app/bk/[submissionId]/actions";
@@ -69,6 +69,12 @@ export default async function HasilPage({ params }: { params: Promise<{ id: stri
     const review = reviewByAspect.get(a.key);
     return review ? review.teacherValue : a.score;
   };
+
+  // Kesimpulan pakai nilai yang sama dengan yang tampil ke siswa (nilai guru
+  // kalau sudah ditinjau, bukan nilai mesin mentah).
+  const qualitySummary = summarizeWritingQuality(
+    aspects.map((a) => ({ ...a, score: displayScore(a) }))
+  );
 
   return (
     <div>
@@ -199,6 +205,15 @@ export default async function HasilPage({ params }: { params: Promise<{ id: stri
           </div>
         );
       })}
+
+      {aspects.length > 0 && (
+        <>
+          <p className="tbl-k">KESIMPULAN KUALITAS TULISAN</p>
+          <div className="card" style={{ marginBottom: 28 }}>
+            <p style={{ fontSize: 14, lineHeight: 1.7 }}>{qualitySummary.text}</p>
+          </div>
+        </>
+      )}
 
       {focus && focusAssignment && (
         <div className="focus">
