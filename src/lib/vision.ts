@@ -318,6 +318,24 @@ export function estimateSlant(
   return { angleDeg: bestDeg, confidence };
 }
 
+/**
+ * Sampel tinggi yang kemungkinan besar huruf sungguhan, untuk mengukur ukuran
+ * & konsistensi tinggi huruf. Foto HP asli membawa banyak "komponen" yang
+ * bukan huruf: noise 1-3px (debu, artefak JPEG, tekstur kertas) dan kadang
+ * gumpalan raksasa (lipatan/bayangan/huruf antar-baris yang menyambung) —
+ * keduanya membuat koefisien variasi meledak (terukur sampai 444%) padahal
+ * tulisannya sendiri wajar. Dua tahap: buang noise absolut dulu, baru buang
+ * outlier relatif terhadap median sisanya (median dihitung SETELAH noise
+ * dibuang, karena pada foto berbintik noise bisa jadi mayoritas).
+ */
+export function letterHeightSample(components: ComponentBox[]): number[] {
+  const NOISE_MAX_PX = 3;
+  const heights = components.map((c) => c.maxY - c.minY + 1).filter((h) => h > NOISE_MAX_PX);
+  if (heights.length === 0) return [];
+  const m = median(heights);
+  return heights.filter((h) => h >= m * 0.4 && h <= m * 3);
+}
+
 export function median(values: number[]): number {
   if (values.length === 0) return NaN;
   const sorted = [...values].sort((a, b) => a - b);

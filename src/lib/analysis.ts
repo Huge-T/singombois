@@ -8,6 +8,7 @@ import {
   detectRuledLines,
   estimateSlant,
   laplacianVariance,
+  letterHeightSample,
   median,
   otsuThreshold,
   quadrantBrightness,
@@ -16,7 +17,11 @@ import {
 
 // v1.1: kemiringan (slant) kini diukur via shear-projection untuk kebutuhan
 // variabel Gestalt "kemiringan huruf" — sebelumnya sengaja tak diukur.
-export const EXTRACTOR_VERSION = "geo-v1.1";
+// v1.2: konsistensi tinggi huruf dihitung dari letterHeightSample() (noise &
+// gumpalan raksasa dibuang dulu) — sebelumnya CV bisa sampai 444%.
+export const EXTRACTOR_VERSION = "geo-v1.2";
+
+const MIN_LETTER_SAMPLES = 20;
 
 /** Printed rule color on the worksheet template — see WorksheetPrint component. Must match. */
 const RULE_COLOR: [number, number, number] = [203, 216, 230]; // #CBD8E6
@@ -256,7 +261,8 @@ export async function extractFeatures(
   // --- x-height & size consistency ---
   const heights = allComponents.map((c) => c.maxY - c.minY + 1);
   const xHeightPx = median(heights);
-  const sizeConsistencyCv = cvPercent(heights);
+  const letterHeights = letterHeightSample(allComponents);
+  const sizeConsistencyCv = cvPercent(letterHeights);
 
   // --- baseline deviation & slope, per band, averaged ---
   const baselineDevsPx: number[] = [];
@@ -310,7 +316,10 @@ export async function extractFeatures(
     xHeight: mmPerPx
       ? { value: xHeightPx * mmPerPx, unit: "mm", confidence: calibratedConf }
       : { value: xHeightPx, unit: "px", confidence: Math.min(confBase, 0.35) },
-    sizeConsistency: { value: sizeConsistencyCv, unit: "%", confidence: confBase },
+    sizeConsistency:
+      letterHeights.length >= MIN_LETTER_SAMPLES
+        ? { value: sizeConsistencyCv, unit: "%", confidence: confBase }
+        : unmeasured("%"),
     baselineDeviation: mmPerPx && Number.isFinite(baselineDevPx)
       ? { value: baselineDevPx * mmPerPx, unit: "mm", confidence: calibratedConf }
       : unmeasured("mm"),
