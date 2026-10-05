@@ -76,10 +76,11 @@ export function profilSingoMbois(): string | null {
 }
 
 /**
- * Video panduan pemakaian situs, untuk tombol popup di hero. Berkasnya
- * (~190MB) disimpan di Vercel Blob, bukan public/, karena GitHub menolak
- * berkas di atas 100MB kalau ikut di-commit.
+ * Video panduan pemakaian situs, untuk tombol popup di hero. Disimpan di
+ * Vercel Blob (bukan public/) karena terlalu besar untuk git. Versi 720p
+ * (~53MB) menggantikan master 183MB: kuota Blob Data Transfer paket Hobby
+ * (10GB/bulan) habis oleh pemutaran video ukuran besar.
  */
 export function videoPanduanUrl(): string | null {
-  return "https://iqschpthdktp2lfx.public.blob.vercel-storage.com/panduan/tutorial-website-singo-mbois.mp4";
+  return "https://iqschpthdktp2lfx.public.blob.vercel-storage.com/panduan/tutorial-website-singo-mbois-720p.mp4";
 }
