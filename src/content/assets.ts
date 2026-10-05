@@ -76,11 +76,11 @@ export function profilSingoMbois(): string | null {
 }
 
 /**
- * Video panduan pemakaian situs, untuk tombol popup di hero. Disimpan di
- * Vercel Blob (bukan public/) karena terlalu besar untuk git. Versi 720p
- * (~53MB) menggantikan master 183MB: kuota Blob Data Transfer paket Hobby
- * (10GB/bulan) habis oleh pemutaran video ukuran besar.
+ * URL video panduan untuk tombol popup di hero; tombol baru tampil kalau
+ * diisi. Sengaja kosong: video sebelumnya di Vercel Blob menghabiskan kuota
+ * Blob Data Transfer paket Hobby (10GB/bulan), jadi taruh di host video
+ * eksternal (mis. YouTube), bukan di Blob.
  */
 export function videoPanduanUrl(): string | null {
-  return "https://iqschpthdktp2lfx.public.blob.vercel-storage.com/panduan/tutorial-website-singo-mbois-720p.mp4";
+  return null;
 }
