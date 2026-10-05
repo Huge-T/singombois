@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { ROLE_HOME } from "@/lib/roleHome";
 
 export const runtime = "nodejs";
 
@@ -37,8 +39,13 @@ export async function POST(req: NextRequest) {
   } catch {
     // body kosong/bukan JSON: hitung sebagai beranda
   }
+  // Tujuan "Ke beranda saya" untuk menu atas (halaman publik di-cache, jadi
+  // status login dibawa lewat respons ping ini, bukan dibaca saat render).
+  const session = await auth();
+  const home = session?.user ? ROLE_HOME[session.user.role] : null;
+
   if (!COUNTABLE_PATHS.has(path)) {
-    return NextResponse.json({ counted: false });
+    return NextResponse.json({ counted: false, home });
   }
 
   const cookieVisitorId = req.cookies.get(VISITOR_COOKIE)?.value;
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest) {
     counted = false; // unique [visitorId, path, day]: sudah terhitung hari ini
   }
 
-  const res = NextResponse.json({ counted });
+  const res = NextResponse.json({ counted, home });
   if (!hasValidCookie) {
     res.cookies.set(VISITOR_COOKIE, randomUUID(), {
       httpOnly: true,

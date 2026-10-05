@@ -11,6 +11,9 @@ export const metadata = {
     "Kegiatan SINGO MBOIS di SMP Negeri 27 Malang: literasi pembiasaan mingguan, bimbingan teknis guru, asesmen literasi, dan analisis kualitas tulisan tangan siswa.",
 };
 
+// Di-cache CDN dan disegarkan tiap 5 menit (angka kunjungan/ulasan tidak perlu real-time).
+export const revalidate = 300;
+
 export default async function GiatPage() {
   const activities = await getActivities();
 

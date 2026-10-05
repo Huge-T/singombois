@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { logoSingoMbois } from "@/content/assets";
-import { VisitPing } from "@/components/VisitPing";
-import { auth, type AppRole } from "@/lib/auth";
-import { SignOutButton } from "@/components/SignOutButton";
+import { NavAccount } from "@/components/NavAccount";
 import { MobileMenuToggle } from "@/components/MobileMenuToggle";
 
 const links = [
@@ -14,27 +12,15 @@ const links = [
   { href: "/untuk-sekolah-lain", label: "Sekolah lain" },
 ];
 
-const ROLE_HOME: Record<AppRole, string> = {
-  STUDENT: "/siswa",
-  TEACHER: "/guru",
-  GURU_BK: "/bk",
-  COORDINATOR: "/koordinator",
-  ADMIN: "/koordinator",
-  SUPER_ADMIN: "/koordinator",
-};
-
-export async function PublicNav({ active }: { active?: string }) {
+export function PublicNav({ active }: { active?: string }) {
   const logo = logoSingoMbois();
-  // Halaman publik (mis. beranda) tidak sadar sesi login sama sekali —
-  // guru/admin yang klik wordmark dari dasbor mereka mendarat di sini dan
-  // cuma lihat tombol "Masuk" generik, kelihatan seperti otomatis logout
-  // padahal sesinya masih valid. Tunjukkan jalan balik + tombol Keluar asli.
-  const session = await auth();
+  // Status login SENGAJA tidak dibaca di server: itu memaksa semua halaman
+  // publik dirender ulang di origin tiap kunjungan (no-store) dan menghabiskan
+  // kuota Fast Origin Transfer. NavAccount membacanya di browser.
   return (
     <>
       <MobileMenuToggle />
       <header className="situs">
-        <VisitPing />
         <nav className="nav" aria-label="Navigasi utama">
           <Link className="merek" href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -56,18 +42,7 @@ export async function PublicNav({ active }: { active?: string }) {
             <span />
             <span />
           </label>
-          {session?.user ? (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-              <Link href={ROLE_HOME[session.user.role]} className="tombol tombol-utama tombol-kecil">
-                Ke beranda saya
-              </Link>
-              <SignOutButton />
-            </span>
-          ) : (
-            <Link href="/masuk" className="tombol tombol-utama tombol-kecil">
-              Masuk
-            </Link>
-          )}
+          <NavAccount />
         </nav>
       </header>
     </>

@@ -40,6 +40,9 @@ const orgJsonLd = {
   sameAs: CONTACTS.socials.map((s) => s.url),
 };
 
+// Di-cache CDN dan disegarkan tiap 5 menit (angka kunjungan/ulasan tidak perlu real-time).
+export const revalidate = 300;
+
 export default async function HomePage() {
   const berkas = dokumen();
   const [giat, stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
