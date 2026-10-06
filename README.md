@@ -2,15 +2,14 @@
 
 Implementasi kerja dari `prd.md` dan `Mockup.html` di root repo ini. Next.js full-stack
 (App Router + TypeScript), Prisma/PostgreSQL, NextAuth, dan mesin analisis kualitas tulisan
-tangan yang benar-benar mengukur piksel — bukan simulasi angka acak. Sejak 20 Jul 2026
-disiapkan untuk deploy ke Vercel (lihat [Deploy ke Vercel](#deploy-ke-vercel)); database
-sebelumnya SQLite lokal, kini PostgreSQL (Neon) karena disk fungsi serverless Vercel tidak
-permanen.
+tangan yang benar-benar mengukur piksel — bukan simulasi angka acak. Sejak 6 Okt 2026
+berjalan di Hostinger (Business Web Hosting, Node.js App; lihat
+[Deploy ke Hostinger](#deploy-ke-hostinger)); sebelumnya di Vercel. Database PostgreSQL (Neon).
 
 ## Menjalankan
 
-Butuh database Postgres (Neon punya tingkat gratis dan paling gampang dipasangkan ke
-Vercel nanti) — lihat `.env.example` untuk format `DATABASE_URL`/`DIRECT_URL`.
+Butuh database Postgres (Neon punya tingkat gratis) — lihat `.env.example` untuk format
+`DATABASE_URL`/`DIRECT_URL`.
 
 ```bash
 npm install
@@ -22,8 +21,9 @@ npm run dev
 
 Buka http://localhost:3000.
 
-Berkas unggahan (foto lembar jawaban, audio materi via koordinator) disimpan ke `public/`
-di lokal, dan ke Vercel Blob di produksi — otomatis, lihat `src/lib/storage.ts`.
+Berkas unggahan (foto lembar jawaban, foto kegiatan, audio materi) disimpan di disk, di
+folder `UPLOAD_DIR` (default lokal: `.data/uploads`) dan disajikan lewat route
+`/files/[...path]` — lihat `src/lib/storage.ts`.
 
 ### Akun demo (dari seed)
 
@@ -171,36 +171,41 @@ bedanya dengan sesuatu yang lupa dikerjakan:
   pembacaan kode + smoke test HTTP, bukan observasi visual langsung. Disarankan klik-klik
   manual sebelum dipakai sungguhan di kelas.
 
-## Deploy ke Vercel
+## Deploy ke Hostinger
 
-Shared hosting biasa (mis. Hostinger paket web hosting) tidak bisa menjalankan app ini —
-butuh runtime Node.js yang jalan terus, bukan sekadar PHP/statis. Vercel dipilih karena
-pembuat Next.js sendiri dan dukungan App Router-nya paling mulus.
+Hostinger **Business Web Hosting** (atau Cloud) menjalankan app ini sebagai *Node.js App*
+(paket Premium/Single tidak mendukung Node.js). Setiap deploy, Hostinger membuat folder
+build baru dan **menimpa** `hbuilds/` dan `public_html`, jadi berkas unggahan harus di
+folder lain (`UPLOAD_DIR`).
 
-Sekali per proyek (bukan tiap deploy):
+Sekali per proyek:
 
-1. **Database**: buat project Postgres gratis di [neon.tech](https://neon.tech). Salin
-   *pooled connection string* → `DATABASE_URL`, dan *direct connection string* →
-   `DIRECT_URL` (dua tab berbeda di dashboard Neon; lihat `.env.example`).
-2. **Vercel project**: `npx vercel link` dari folder `app/` (login lewat browser saat
-   diminta), atau import repo ini lewat dashboard Vercel.
-3. **Env vars**: di Vercel → Project → Settings → Environment Variables, isi
-   `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` (generate baru dengan
-   `openssl rand -base64 32`, JANGAN pakai nilai dev). **Jangan** isi
-   `NEXTAUTH_URL`/`AUTH_URL` — Vercel mengirim header host yang benar sendiri dan
-   `trustHost: true` di `src/lib/auth.ts` sudah menanganinya.
-4. **Blob store**: Vercel → Project → Storage → Create → Blob. Setelah dipasang, Vercel
-   otomatis menyuntik `BLOB_READ_WRITE_TOKEN` — tidak perlu diisi manual. Tanpa ini,
-   unggahan foto akan gagal di produksi (disk fungsi serverless tidak permanen).
-5. **Sinkronkan skema** ke database produksi: `DATABASE_URL="<pooled>" DIRECT_URL="<direct>" npx prisma db push`
-   dari lokal (sekali di awal, lalu tiap ada perubahan `schema.prisma`).
-6. **Domain sekolah** (opsional): Vercel → Project → Settings → Domains → tambah
-   subdomain (mis. `singombois.smpn27malang.sch.id`), lalu tambah **CNAME record**
-   sesuai instruksi Vercel di panel DNS domain (Hostinger hPanel → DNS Zone) — tidak
-   perlu memindahkan nameserver, situs utama sekolah tidak tersentuh.
+1. **Database**: Postgres di [neon.tech](https://neon.tech). *Pooled connection string* →
+   `DATABASE_URL`, *direct* → `DIRECT_URL`. Sinkronkan skema dari lokal:
+   `DATABASE_URL=... DIRECT_URL=... npx prisma db push`.
+2. **Node.js App**: hPanel → Websites → Add Website → Node.js Apps → impor repo GitHub
+   (atau Upload file: `git archive --format=zip -o app.zip HEAD`). Preset Next.js, Node 22.
+   Build command bawaan (`npm run build`) sudah memakai **webpack** — Turbopack gagal
+   membuat proses anak di hosting ini.
+3. **Environment variables** (hPanel → app → Variabel environment): `DATABASE_URL`,
+   `DIRECT_URL`, `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_URL` dan `NEXTAUTH_URL`
+   (keduanya persis URL situs, mis. `https://singombois.smpnegeri27malang.sch.id` —
+   tanpa ini redirect login jatuh ke localhost), dan `UPLOAD_DIR` (folder permanen di
+   luar `domains/<domain>/hbuilds` dan `public_html`, mis. `/home/<user>/singombois-storage/uploads`).
+   Variabel `NEXT_BUILD_CPUS=1` opsional bila build gagal karena batas proses.
+4. **Domain**: subdomain ditambahkan dari hPanel; DNS dan SSL diatur otomatis.
 
-Deploy berikutnya cukup `npx vercel --prod` dari `app/`, atau otomatis tiap push ke
-branch utama bila proyek terhubung ke repo Git.
+Deploy berikutnya: push ke GitHub (bila terhubung) atau unggah ZIP baru lalu Deploy.
+
+Catatan operasional:
+- Akses SSH: hPanel → Advanced → SSH Access, tambahkan kunci publik. Node ada di
+  `/opt/alt/alt-nodejs22/root/usr/bin/node`; log aplikasi di
+  `domains/<domain>/hbuilds/current/nodejs/console.log`.
+- CDN Hostinger mengecilkan/mengompres gambar yang disajikan lewat `/files/...` (mis. foto
+  2000×1500 tersaji 1600×1200). Berkas asli di disk tidak berubah dan analisis tulisan
+  selalu memakai berkas asli.
+- Memindahkan berkas lama dari Vercel Blob: `scripts/migrate-blob-files.ts`
+  (`--download-only`, `--apply`, `--rollback`); sudah dijalankan 6 Okt 2026.
 
 ## Struktur
 
