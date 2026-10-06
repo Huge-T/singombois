@@ -4,6 +4,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 import { ActivityBrowser } from "@/components/ActivityBrowser";
 import { GIAT } from "@/content/giat";
 import { getActivities } from "@/lib/activities";
+import { buildSafe } from "@/lib/buildSafe";
 
 export const metadata = {
   title: "Giat",
@@ -15,7 +16,7 @@ export const metadata = {
 export const revalidate = 300;
 
 export default async function GiatPage() {
-  const activities = await getActivities();
+  const activities = await buildSafe(() => getActivities(), []);
 
   return (
     <div>

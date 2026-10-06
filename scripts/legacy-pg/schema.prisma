@@ -1,10 +1,15 @@
+// Skema sumber (PostgreSQL/Neon) khusus untuk scripts/migrate-pg-to-mysql.ts:
+// menghasilkan klien kedua yang hanya dipakai membaca data lama. Salinan skema
+// PostgreSQL sebelum pindah ke MariaDB (6 Okt 2026); hapus folder ini setelah
+// migrasi database selesai dan Neon tidak diperlukan lagi.
 generator client {
   provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/client-pg"
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("PG_DATABASE_URL")
 }
 
 enum StaffRole {
@@ -23,7 +28,7 @@ enum ConsentStatus {
 
 model School {
   id        String   @id @default(cuid())
-  name      String   @db.VarChar(255)
+  name      String
   npsn      String?
   region    String?
   createdAt DateTime @default(now())
@@ -124,11 +129,11 @@ model Consent {
   id           String        @id @default(cuid())
   studentId    String
   student      Student       @relation(fields: [studentId], references: [id])
-  guardianName String        @db.VarChar(255)
+  guardianName String
   status       ConsentStatus @default(PENDING)
   grantedAt    DateTime?
   revokedAt    DateTime?
-  evidenceNote String?       @db.Text
+  evidenceNote String?
   createdAt    DateTime      @default(now())
 }
 
@@ -136,14 +141,14 @@ model ReadingText {
   id                String     @id @default(cuid())
   schoolId          String
   school            School     @relation(fields: [schoolId], references: [id])
-  title             String     @db.VarChar(255)
-  body              String     @db.Text
+  title             String
+  body              String
   gradeLevel        Int
   theme             String?
   estMinutes        Int        @default(5)
   level             TestLevel? // terisi untuk materi tes Gestalt berlevel
-  quizJson          String?    @db.Text // comprehension questions: [{question, options[], correctIndex}]
-  openQuestionsJson String?    @db.Text // soal uraian dijawab tulis tangan: [{question, repeat?}]
+  quizJson          String? // comprehension questions: [{question, options[], correctIndex}]
+  openQuestionsJson String? // soal uraian dijawab tulis tangan: [{question, repeat?}]
   createdAt         DateTime   @default(now())
 
   sessions Session[]
@@ -153,16 +158,16 @@ model AudioMaterial {
   id                String     @id @default(cuid())
   schoolId          String
   school            School     @relation(fields: [schoolId], references: [id])
-  title             String     @db.VarChar(255)
-  fileUrl           String     @db.VarChar(512)
-  transcript        String     @db.Text
+  title             String
+  fileUrl           String
+  transcript        String
   durationS         Int
   qcPassed          Boolean    @default(false)
-  qcNote            String?    @db.Text
+  qcNote            String?
   level             TestLevel? // terisi untuk materi tes Gestalt berlevel
-  quizJson          String?    @db.Text // comprehension questions: [{question, options[], correctIndex}]
-  openQuestionsJson String?    @db.Text // soal uraian dijawab tulis tangan: [{question, repeat?}] — repeat = pengulangan pembacaan audio soal
-  questionsAudioUrl String?    @db.VarChar(512) // rekaman pembacaan soal uraian; bila terisi, teks soal disembunyikan default agar konstruk menyimak terjaga
+  quizJson          String? // comprehension questions: [{question, options[], correctIndex}]
+  openQuestionsJson String? // soal uraian dijawab tulis tangan: [{question, repeat?}] — repeat = pengulangan pembacaan audio soal
+  questionsAudioUrl String? // rekaman pembacaan soal uraian; bila terisi, teks soal disembunyikan default agar konstruk menyimak terjaga
   createdAt         DateTime   @default(now())
 
   sessions Session[]
@@ -185,8 +190,8 @@ model ExerciseModule {
   schoolId    String
   school      School @relation(fields: [schoolId], references: [id])
   aspect      String
-  title       String @db.VarChar(255)
-  description String @db.Text
+  title       String
+  description String
   durationMin Int    @default(5)
 
   assignments ExerciseAssignment[]
@@ -218,7 +223,7 @@ model Session {
   worksheetTemplate   WorksheetTemplate @relation(fields: [worksheetTemplateId], references: [id])
   storyPromptId       String?
   storyPrompt         StoryPrompt?      @relation(fields: [storyPromptId], references: [id])
-  label               String            @db.VarChar(255)
+  label               String
   opensAt             DateTime
   closesAt            DateTime
   createdById         String
@@ -249,24 +254,22 @@ model StoryPrompt {
   schoolId    String
   school      School    @relation(fields: [schoolId], references: [id])
   level       TestLevel
-  title       String    @db.VarChar(255)
+  title       String
   imageSlug   String // path relatif di public/, mis. "tes/gambar-bercerita-low.jpg"
-  starterText String    @db.Text
+  starterText String
   createdAt   DateTime  @default(now())
 
   sessions Session[]
 }
 
-/**
- * Kartu dokumentasi kegiatan di halaman publik /giat, dikelola koordinator
- * lewat /koordinator/kegiatan (menggantikan daftar statis di content/giat.ts).
- */
+/** Kartu dokumentasi kegiatan di halaman publik /giat, dikelola koordinator
+ *  lewat /koordinator/kegiatan (menggantikan daftar statis di content/giat.ts). */
 model Activity {
   id        String   @id @default(cuid())
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
-  title     String   @db.VarChar(255)
-  category  String   @db.VarChar(255) // label bebas: "sosialisasi", "tes awal", "literasi", dst.
+  title     String
+  category  String // label bebas: "sosialisasi", "tes awal", "literasi", dst.
   year      Int
   createdAt DateTime @default(now())
 
@@ -279,7 +282,7 @@ model ActivityPhoto {
   id         String   @id @default(cuid())
   activityId String
   activity   Activity @relation(fields: [activityId], references: [id])
-  url        String   @db.VarChar(512)
+  url        String
   createdAt  DateTime @default(now())
 }
 
@@ -318,8 +321,8 @@ model Artifact {
   submissionId       String
   submission         Submission   @relation(fields: [submissionId], references: [id])
   kind               ArtifactKind @default(TULISAN)
-  originalPath       String       @db.VarChar(512)
-  qualityFlags       String       @db.Text
+  originalPath       String
+  qualityFlags       String
   accepted           Boolean
   ruledLinesDetected Int
   mmPerPx            Float?
@@ -341,9 +344,9 @@ model CharacterReading {
   readerId            String
   reader              StaffUser     @relation(fields: [readerId], references: [id])
   status              ReadingStatus @default(DRAFT)
-  strengthsJson       String        @db.Text // daftar potensi positif: [{title, detail}]
-  learningSuggestions String        @db.Text
-  notes               String?       @db.Text // catatan pendamping, boleh memuat sisi yang perlu perhatian
+  strengthsJson       String // daftar potensi positif: [{title, detail}]
+  learningSuggestions String
+  notes               String? // catatan pendamping, boleh memuat sisi yang perlu perhatian
   publishedAt         DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
@@ -358,7 +361,7 @@ model FinalConclusion {
   student     Student       @relation(fields: [studentId], references: [id])
   authorId    String
   author      StaffUser     @relation(fields: [authorId], references: [id])
-  body        String        @db.MediumText
+  body        String
   status      ReadingStatus @default(DRAFT)
   publishedAt DateTime?
   createdAt   DateTime      @default(now())
@@ -377,7 +380,7 @@ model ConsultTicket {
   student      Student      @relation(fields: [studentId], references: [id])
   submissionId String?
   submission   Submission?  @relation(fields: [submissionId], references: [id])
-  subject      String       @db.VarChar(255)
+  subject      String
   status       TicketStatus @default(OPEN)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -396,7 +399,7 @@ model ConsultMessage {
   ticket     ConsultTicket @relation(fields: [ticketId], references: [id])
   senderRole SenderRole
   senderId   String
-  body       String        @db.Text
+  body       String
   createdAt  DateTime      @default(now())
 }
 
@@ -405,8 +408,8 @@ model FeatureSet {
   artifactId       String   @unique
   artifact         Artifact @relation(fields: [artifactId], references: [id])
   extractorVersion String
-  featuresJson     String   @db.Text
-  confidenceJson   String   @db.Text
+  featuresJson     String
+  confidenceJson   String
   createdAt        DateTime @default(now())
 }
 
@@ -419,7 +422,7 @@ model Score {
   listening        Float?
   writingContent   Float?
   writingQuality   Float?
-  aspectsJson      String     @db.Text
+  aspectsJson      String
   machineGenerated Boolean    @default(true)
   createdAt        DateTime   @default(now())
 
@@ -436,7 +439,7 @@ model TeacherReview {
   machineValue Float
   teacherValue Float
   agree        Boolean
-  note         String?   @db.Text
+  note         String?
   reviewedAt   DateTime  @default(now())
 
   @@unique([scoreId, aspect])
@@ -485,10 +488,10 @@ model AuditLog {
 
 model ContactLead {
   id          String   @id @default(cuid())
-  schoolName  String   @db.VarChar(255)
-  contactName String   @db.VarChar(255)
+  schoolName  String
+  contactName String
   email       String
-  message     String   @db.Text
+  message     String
   handled     Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
@@ -525,8 +528,8 @@ model Feedback {
   submission     Submission?       @relation(fields: [submissionId], references: [id])
   awareness      FeedbackAwareness
   clarityScore   Int // 1-5 "seberapa paham cara belajarmu setelah menerima hasil"
-  impression     String            @db.Text // kesan paling berkesan — kandidat tayang publik
-  suggestion     String?           @db.Text // saran perbaikan — internal saja, tidak pernah tayang
+  impression     String // kesan paling berkesan — kandidat tayang publik
+  suggestion     String? // saran perbaikan — internal saja, tidak pernah tayang
   displayConsent DisplayConsent
   approved       Boolean           @default(false) // moderasi koordinator sebelum tayang
   createdAt      DateTime          @default(now())
@@ -541,9 +544,9 @@ model Feedback {
 // default) — mirror pola approved di Feedback.
 model ParentReview {
   id        String   @id @default(cuid())
-  name      String   @db.VarChar(255)
+  name      String
   rating    Int // 1-5
-  comment   String   @db.Text
+  comment   String
   approved  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
@@ -569,8 +572,8 @@ model KokurikulerQuiz {
   class               Class              @relation(fields: [classId], references: [id])
   createdById         String
   createdBy           StaffUser          @relation(fields: [createdById], references: [id])
-  label               String             @db.VarChar(255)
-  tema                String?            @db.VarChar(255)
+  label               String
+  tema                String?
   // Dipakai siswa mencetak & menulis jawaban uraian (kalau ada) supaya foto
   // jawabannya bisa dikalibrasi grafologi sama seperti lembar kerja literasi.
   // Nullable karena kuis lama (sebelum fitur ini) tidak punya template — kuis
@@ -607,8 +610,8 @@ model KokurikulerQuestion {
   quiz                 KokurikulerQuiz         @relation(fields: [quizId], references: [id])
   order                Int
   type                 KokurikulerQuestionType
-  text                 String                  @db.Text
-  optionsJson          String?                 @db.Text // PILIHAN_GANDA saja: ["opsi A","opsi B","opsi C","opsi D"]
+  text                 String
+  optionsJson          String? // PILIHAN_GANDA saja: ["opsi A","opsi B","opsi C","opsi D"]
   correctAnswer        String? // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: null (tak ada kunci otomatis)
   personalityDimension String? // tag bebas dari guru, mis. "ketangguhan" — dipakai tally pola, opsional
   createdAt            DateTime                @default(now())
@@ -644,7 +647,7 @@ model KokurikulerAnswer {
   attempt    KokurikulerAttempt  @relation(fields: [attemptId], references: [id])
   questionId String
   question   KokurikulerQuestion @relation(fields: [questionId], references: [id])
-  answerText String?             @db.Text // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: null (diganti foto, lihat artifact)
+  answerText String? // PG: "A".."D"; BENAR_SALAH: "BENAR"|"SALAH"; URAIAN: null (diganti foto, lihat artifact)
   isCorrect  Boolean? // null untuk URAIAN; dihitung saat submit utk PG/Benar-Salah
 
   artifact KokurikulerArtifact?
@@ -660,8 +663,8 @@ model KokurikulerArtifact {
   answerId           String            @unique
   answer             KokurikulerAnswer @relation(fields: [answerId], references: [id])
   kind               ArtifactKind      @default(TULISAN)
-  originalPath       String            @db.VarChar(512)
-  qualityFlags       String            @db.Text
+  originalPath       String
+  qualityFlags       String
   accepted           Boolean
   ruledLinesDetected Int
   mmPerPx            Float?
@@ -676,9 +679,9 @@ model KokurikulerFeatureSet {
   artifactId       String              @unique
   artifact         KokurikulerArtifact @relation(fields: [artifactId], references: [id])
   extractorVersion String
-  featuresJson     String              @db.Text
-  confidenceJson   String              @db.Text
-  aspectsJson      String              @db.Text // hasil scoreAspects() — dipakai tampilkan detail per aspek
+  featuresJson     String
+  confidenceJson   String
+  aspectsJson      String // hasil scoreAspects() — dipakai tampilkan detail per aspek
   writingQuality   Float? // ringkasan grafologi 0-100 utk jawaban ini
   createdAt        DateTime            @default(now())
 }
@@ -694,9 +697,9 @@ model KokurikulerReading {
   readerId        String
   reader          StaffUser          @relation("KokurikulerReader", fields: [readerId], references: [id])
   status          ReadingStatus      @default(DRAFT)
-  indicationsJson String             @db.Text // [{dimension, title, detail}] — indikasi per dimensi kepribadian
-  narrative       String             @db.Text // simpulan naratif keseluruhan, wajib diisi sebelum publikasi
-  notes           String?            @db.Text // catatan internal, tidak pernah tampil ke siswa
+  indicationsJson String // [{dimension, title, detail}] — indikasi per dimensi kepribadian
+  narrative       String // simpulan naratif keseluruhan, wajib diisi sebelum publikasi
+  notes           String? // catatan internal, tidak pernah tampil ke siswa
   publishedAt     DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

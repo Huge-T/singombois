@@ -644,7 +644,13 @@ Hujan memiliki peran vital dalam kehidupan, yaitu sebagai sumber air bersih, pen
       consentStatus: ConsentStatus.GRANTED,
     });
   }
-  const dummyStudents = await prisma.student.createManyAndReturn({ data: dummyStudentRows });
+  // MySQL/MariaDB tidak punya createManyAndReturn: sisipkan lalu baca ulang
+  // berurutan NISN (NISN dibuat berurutan, jadi urutannya sama dengan sisipan).
+  await prisma.student.createMany({ data: dummyStudentRows });
+  const dummyStudents = await prisma.student.findMany({
+    where: { nisn: { in: dummyStudentRows.map((r) => r.nisn) } },
+    orderBy: { nisn: "asc" },
+  });
 
   const strengthPool = [
     { title: "Rapi dan konsisten", detail: "Jarak antar kata dan margin kirimu terjaga dari awal sampai akhir halaman. Manfaatkan: jadi contoh cara menulis rapi untuk teman sekelas." },
@@ -662,7 +668,7 @@ Hujan memiliki peran vital dalam kehidupan, yaitu sebagai sumber air bersih, pen
     "Latih kecepatan menulis dengan latihan bertimer singkat, tanpa mengorbankan kerapian.",
   ];
   const sessionOfClass = new Map(extraClasses.map((c) => [c.classId, c.sessionId]));
-  const dummySubmissions = await prisma.submission.createManyAndReturn({
+  await prisma.submission.createMany({
     data: dummyStudents.map((s, i) => ({
       sessionId: sessionOfClass.get(s.classId)!,
       studentId: s.id,
@@ -674,6 +680,10 @@ Hujan memiliki peran vital dalam kehidupan, yaitu sebagai sumber air bersih, pen
       listeningTotal: 2,
       submittedAt: new Date(nowMs - (25 + (i % 20)) * DAY),
     })),
+  });
+  const dummySubmissions = await prisma.submission.findMany({
+    where: { studentId: { in: dummyStudents.map((s) => s.id) } },
+    orderBy: { student: { nisn: "asc" } },
   });
   await prisma.characterReading.createMany({
     data: dummySubmissions.map((sub, i) => ({

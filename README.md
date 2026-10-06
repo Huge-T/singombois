@@ -1,19 +1,20 @@
 # SINGO MBOIS — Web App
 
 Implementasi kerja dari `prd.md` dan `Mockup.html` di root repo ini. Next.js full-stack
-(App Router + TypeScript), Prisma/PostgreSQL, NextAuth, dan mesin analisis kualitas tulisan
+(App Router + TypeScript), Prisma/MySQL (MariaDB), NextAuth, dan mesin analisis kualitas tulisan
 tangan yang benar-benar mengukur piksel — bukan simulasi angka acak. Sejak 6 Okt 2026
 berjalan di Hostinger (Business Web Hosting, Node.js App; lihat
-[Deploy ke Hostinger](#deploy-ke-hostinger)); sebelumnya di Vercel. Database PostgreSQL (Neon).
+[Deploy ke Hostinger](#deploy-ke-hostinger)); sebelumnya di Vercel. Database MariaDB 11.8
+di Hostinger (sebelumnya PostgreSQL/Neon).
 
 ## Menjalankan
 
-Butuh database Postgres (Neon punya tingkat gratis) — lihat `.env.example` untuk format
-`DATABASE_URL`/`DIRECT_URL`.
+Butuh MariaDB/MySQL (mis. `brew install mariadb@11.8`, jalankan di port bebas) — isi
+`DATABASE_URL="mysql://user:pass@127.0.0.1:3306/namadb"` di `.env`.
 
 ```bash
 npm install
-cp .env.example .env    # lalu isi DATABASE_URL & DIRECT_URL dengan Postgres kamu
+cp .env.example .env    # lalu isi DATABASE_URL dengan MariaDB/MySQL kamu
 npx prisma db push      # sinkronkan skema ke database
 npm run db:seed         # isi data demo (sekolah, kelas, siswa, sesi, indikator baseline)
 npm run dev
@@ -180,15 +181,17 @@ folder lain (`UPLOAD_DIR`).
 
 Sekali per proyek:
 
-1. **Database**: Postgres di [neon.tech](https://neon.tech). *Pooled connection string* →
-   `DATABASE_URL`, *direct* → `DIRECT_URL`. Sinkronkan skema dari lokal:
-   `DATABASE_URL=... DIRECT_URL=... npx prisma db push`.
+1. **Database**: buat database MySQL di hPanel (Database → Manajemen). `DATABASE_URL` =
+   `mysql://USER:SANDI@127.0.0.1:3306/NAMADB?connection_limit=5` (sandi di-URL-encode).
+   Buat tabel dari lokal lewat terowongan SSH:
+   `ssh -N -L 3307:127.0.0.1:3306 -p 65002 <user>@<host>` lalu
+   `DATABASE_URL="mysql://USER:SANDI@127.0.0.1:3307/NAMADB" npx prisma db push`.
 2. **Node.js App**: hPanel → Websites → Add Website → Node.js Apps → impor repo GitHub
    (atau Upload file: `git archive --format=zip -o app.zip HEAD`). Preset Next.js, Node 22.
    Build command bawaan (`npm run build`) sudah memakai **webpack** — Turbopack gagal
    membuat proses anak di hosting ini.
 3. **Environment variables** (hPanel → app → Variabel environment): `DATABASE_URL`,
-   `DIRECT_URL`, `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_URL` dan `NEXTAUTH_URL`
+   `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_URL` dan `NEXTAUTH_URL`
    (keduanya persis URL situs, mis. `https://singombois.smpnegeri27malang.sch.id` —
    tanpa ini redirect login jatuh ke localhost), dan `UPLOAD_DIR` (folder permanen di
    luar `domains/<domain>/hbuilds` dan `public_html`, mis. `/home/<user>/singombois-storage/uploads`).
@@ -204,6 +207,9 @@ Catatan operasional:
 - CDN Hostinger mengecilkan/mengompres gambar yang disajikan lewat `/files/...` (mis. foto
   2000×1500 tersaji 1600×1200). Berkas asli di disk tidak berubah dan analisis tulisan
   selalu memakai berkas asli.
+- Pindah database PostgreSQL → MariaDB: `scripts/migrate-pg-to-mysql.ts` (salin + verifikasi
+  baris demi baris; butuh klien sumber dari `scripts/legacy-pg/schema.prisma`). Halaman
+  beranda/Giat memakai `buildSafe` agar build tidak gagal bila database tak terjangkau.
 - Memindahkan berkas lama dari Vercel Blob: `scripts/migrate-blob-files.ts`
   (`--download-only`, `--apply`, `--rollback`); sudah dijalankan 6 Okt 2026.
 

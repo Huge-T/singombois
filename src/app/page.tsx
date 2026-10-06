@@ -17,6 +17,7 @@ import {
   getApprovedTestimonials,
 } from "@/lib/impact";
 import { getApprovedParentReviews, getParentReviewStats } from "@/lib/parentReview";
+import { buildSafe } from "@/lib/buildSafe";
 import { ParentReviewForm } from "@/components/ParentReviewForm";
 
 const orgJsonLd = {
@@ -45,15 +46,35 @@ export const revalidate = 300;
 
 export default async function HomePage() {
   const berkas = dokumen();
-  const [giat, stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await Promise.all([
-    getRecentActivities(),
-    getImpactStats(),
-    getDailyVisits(),
-    getClarityByClass(),
-    getApprovedTestimonials(),
-    getApprovedParentReviews(),
-    getParentReviewStats(),
-  ]);
+  const [giat, stats, dailyVisits, clarityByClass, testimonials, parentReviews, parentReviewStats] = await buildSafe(
+    () =>
+      Promise.all([
+        getRecentActivities(),
+        getImpactStats(),
+        getDailyVisits(),
+        getClarityByClass(),
+        getApprovedTestimonials(),
+        getApprovedParentReviews(),
+        getParentReviewStats(),
+      ]),
+    [
+      [],
+      { studentsServed: 0, classesInProgram: 0, feedbackCount: 0, visitCount: 0 },
+      [],
+      [],
+      [],
+      [],
+      { count: 0, average: null },
+    ] as [
+      Awaited<ReturnType<typeof getRecentActivities>>,
+      Awaited<ReturnType<typeof getImpactStats>>,
+      Awaited<ReturnType<typeof getDailyVisits>>,
+      Awaited<ReturnType<typeof getClarityByClass>>,
+      Awaited<ReturnType<typeof getApprovedTestimonials>>,
+      Awaited<ReturnType<typeof getApprovedParentReviews>>,
+      Awaited<ReturnType<typeof getParentReviewStats>>,
+    ]
+  );
 
   return (
     <div>
