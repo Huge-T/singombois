@@ -1,51 +1,73 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Penyimpanan berkas unggahan (foto lembar jawaban, audio materi).
+ * Penyimpanan berkas unggahan (foto lembar jawaban, foto kegiatan, audio
+ * materi) di disk server. Lokasinya UPLOAD_DIR, HARUS di luar folder aplikasi:
+ * di Hostinger setiap deploy membuat folder build baru dan menimpa isinya,
+ * sedangkan di `next start` berkas yang ditambahkan ke public/ setelah server
+ * menyala tidak ikut disajikan. Berkas disajikan lewat route /files/[...path].
+ * Nilai kembalian saveUploadedFile adalah URL "/files/<relPath>" yang langsung
+ * bisa dipakai di <img>/<audio>.
  *
- * Di Vercel disk fungsi serverless tidak permanen, jadi berkas disimpan ke
- * Vercel Blob — aktif otomatis saat BLOB_READ_WRITE_TOKEN tersedia (di-inject
- * Vercel ketika Blob store terpasang di proyek). Di pengembangan lokal tanpa
- * token, berkas jatuh ke `public/` seperti semula sehingga alur dev tidak
- * berubah. Nilai kembalian selalu URL yang bisa langsung dipakai di <img>/
- * <audio>: URL absolut (Blob) atau path publik lokal ("/uploads/...").
+ * Baris lama yang menyimpan URL Vercel Blob (https://...) tetap bisa dibaca
+ * lewat readUploadedFile sampai dipindahkan oleh scripts/migrate-blob-files.ts.
  */
-function blobConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+export const FILES_URL_PREFIX = "/files/";
+
+export function uploadRoot(): string {
+  return path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), ".data", "uploads"));
+}
+
+/** Path absolut di dalam UPLOAD_DIR, atau null bila relPath mencoba keluar darinya. */
+export function resolveUploadPath(relPath: string): string | null {
+  if (relPath.includes("\0")) return null;
+  const root = uploadRoot();
+  const abs = path.resolve(/*turbopackIgnore: true*/ root, relPath);
+  return abs.startsWith(root + path.sep) ? abs : null;
+}
+
+function relPathFromUrl(storedUrl: string): string | null {
+  return storedUrl.startsWith(FILES_URL_PREFIX) ? storedUrl.slice(FILES_URL_PREFIX.length) : null;
 }
 
 export async function saveUploadedFile(
   relPath: string,
   buffer: Buffer,
-  contentType: string
+  _contentType: string
 ): Promise<string> {
-  const clean = relPath.replace(/\\/g, "/");
-  if (blobConfigured()) {
-    const { put } = await import("@vercel/blob");
-    const res = await put(clean, buffer, {
-      access: "public",
-      contentType,
-      addRandomSuffix: false,
-    });
-    return res.url;
-  }
-  const abs = path.join(process.cwd(), "public", clean);
-  await mkdir(path.dirname(abs), { recursive: true });
-  await writeFile(abs, buffer);
-  return `/${clean}`;
+  const clean = relPath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const abs = resolveUploadPath(clean);
+  if (!abs) throw new Error("Path berkas tidak valid");
+  await mkdir(path.dirname(/*turbopackIgnore: true*/ abs), { recursive: true });
+  await writeFile(/*turbopackIgnore: true*/ abs, buffer);
+  return `${FILES_URL_PREFIX}${clean}`;
 }
 
-/** Idempoten: berkas yang sudah tidak ada dianggap sukses terhapus. */
+/** Idempoten: berkas yang sudah tidak ada dianggap sukses terhapus. URL lama
+ *  (Vercel Blob) diabaikan karena bukan lagi tanggung jawab penyimpanan ini. */
 export async function deleteUploadedFile(storedUrl: string): Promise<void> {
   try {
-    if (/^https?:\/\//.test(storedUrl)) {
-      const { del } = await import("@vercel/blob");
-      await del(storedUrl);
-    } else {
-      await unlink(path.join(process.cwd(), "public", storedUrl));
-    }
+    const rel = relPathFromUrl(storedUrl);
+    const abs = rel === null ? null : resolveUploadPath(rel);
+    if (abs) await unlink(/*turbopackIgnore: true*/ abs);
   } catch {
     // PRIV-2: penghapusan tidak boleh gagal hanya karena berkas sudah hilang.
   }
+}
+
+/** Baca berkas tersimpan untuk diproses ulang di server. */
+export async function readUploadedFile(storedUrl: string): Promise<Buffer> {
+  const rel = relPathFromUrl(storedUrl);
+  if (rel !== null) {
+    const abs = resolveUploadPath(rel);
+    if (!abs) throw new Error("Path berkas tidak valid");
+    return readFile(/*turbopackIgnore: true*/ abs);
+  }
+  if (/^https?:\/\//.test(storedUrl)) {
+    const res = await fetch(storedUrl);
+    if (!res.ok) throw new Error(`fetch gagal: ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
+  throw new Error("Lokasi berkas tidak dikenali");
 }

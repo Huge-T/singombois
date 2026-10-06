@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { readUploadedFile } from "@/lib/storage";
 import { ConflictError } from "@/lib/optimisticLock";
 import { EXTRACTOR_VERSION, extractFeatures, runQualityGate } from "@/lib/analysis";
 import { RUBRIC_VERSION, overallWritingQuality, pickFocusAspect, scoreAspects } from "@/lib/rubric";
@@ -123,9 +124,7 @@ export async function reprocessArtifactAsTulisan(submissionId: string): Promise<
 
   let buffer: Buffer;
   try {
-    const res = await fetch(artifact.originalPath);
-    if (!res.ok) throw new Error(`fetch gagal: ${res.status}`);
-    buffer = Buffer.from(await res.arrayBuffer());
+    buffer = await readUploadedFile(artifact.originalPath);
   } catch (e) {
     console.error("Gagal mengambil ulang berkas untuk reprocess:", e);
     return { error: "Gagal mengambil ulang berkas foto dari penyimpanan." };

@@ -48,6 +48,8 @@ next-env.d.ts
 # user-uploaded artifacts (student work — never commit real uploads)
 /public/uploads/*
 !/public/uploads/.gitkeep
+# penyimpanan unggahan default saat pengembangan lokal (lihat UPLOAD_DIR)
+/.data
 
 # audio kini aset konten (rekaman produksi tim + TTS sementara Middle/umum)
 # dan HARUS ikut ter-deploy — jangan diabaikan lagi.
