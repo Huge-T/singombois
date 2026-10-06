@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Hosting bersama (Hostinger) membatasi jumlah proses anak; isi NEXT_BUILD_CPUS=1
+  // di environment variables bila build gagal membuat proses/worker baru.
+  ...(process.env.NEXT_BUILD_CPUS ? { experimental: { cpus: Number(process.env.NEXT_BUILD_CPUS) } } : {}),
   // Izinkan akses dev server lewat tunnel trycloudflare (untuk uji coba online).
   // Mode produksi (npm start) tidak terpengaruh opsi ini.
   allowedDevOrigins: ["*.trycloudflare.com"],
