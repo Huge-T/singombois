@@ -9,8 +9,7 @@
     "predev": "node scripts/gen-asset-manifest.mjs",
     "dev": "next dev",
     "prebuild": "node scripts/gen-asset-manifest.mjs",
-    "build": "prisma generate && next build",
-    "build:hostinger": "node scripts/gen-asset-manifest.mjs && prisma generate && next build --webpack",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts"
