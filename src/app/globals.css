@@ -1938,6 +1938,35 @@ footer.kaki a {
 .field textarea:focus {
   border-color: var(--singo);
 }
+/* Kolom sandi/PIN dengan tombol tampilkan-sembunyikan */
+.input-sandi {
+  position: relative;
+}
+.input-sandi input {
+  padding-right: 46px;
+}
+.input-sandi-mata {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--tinta-lembut);
+  cursor: pointer;
+}
+.input-sandi-mata:hover,
+.input-sandi-mata[aria-pressed="true"] {
+  color: var(--tinta);
+}
+.input-sandi-mata:focus-visible {
+  outline: 2px solid var(--singo);
+  outline-offset: -4px;
+}
 .field input[type="radio"],
 .field input[type="checkbox"] {
   width: 15px;
