@@ -18,6 +18,8 @@ import {
 } from "@/lib/impact";
 import { getApprovedParentReviews, getParentReviewStats } from "@/lib/parentReview";
 import { buildSafe } from "@/lib/buildSafe";
+import { getPublicRecapSummary } from "@/lib/rekap";
+import { RekapPublik } from "@/components/RekapPublik";
 import { ParentReviewForm } from "@/components/ParentReviewForm";
 
 const orgJsonLd = {
@@ -75,6 +77,8 @@ export default async function HomePage() {
       Awaited<ReturnType<typeof getParentReviewStats>>,
     ]
   );
+
+  const rekapPublik = await buildSafe(() => getPublicRecapSummary(), null);
 
   return (
     <div>
@@ -426,6 +430,17 @@ export default async function HomePage() {
             </div>
           </ScrollReveal>
         </section>
+
+        {/* GAMBARAN SISWA (rekap kesimpulan; tampil bila sampel validasi cukup) */}
+        {rekapPublik && (
+          <section className="bagian" id="gambaran-siswa">
+            <ScrollReveal>
+              <div className="isi">
+                <RekapPublik data={rekapPublik} />
+              </div>
+            </ScrollReveal>
+          </section>
+        )}
 
         {/* TANGGAPAN SISWA */}
         <section className="bagian" id="tanggapan">

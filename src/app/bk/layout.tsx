@@ -44,6 +44,7 @@ export default async function BkLayout({ children }: { children: React.ReactNode
     { href: "/bk", label: "Antrean pembacaan", badge: pendingReadings || undefined },
     { href: "/bk/kokurikuler", label: "Kokurikuler", badge: pendingKokurikulerReadings || undefined },
     { href: "/bk/tiket", label: "Tiket konsultasi", badge: openTickets || undefined },
+    { href: "/bk/rekap", label: "Rekap kesimpulan" },
   ];
 
   return (

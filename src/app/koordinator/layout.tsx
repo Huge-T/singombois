@@ -31,6 +31,7 @@ export default async function KoordinatorLayout({ children }: { children: React.
   const navItems: NavItem[] = [
     { href: "/koordinator", label: "Ringkasan" },
     { href: "/koordinator/indikator", label: "Indikator jurnal" },
+    { href: "/koordinator/rekap", label: "Rekap kesimpulan" },
     { href: "/koordinator/materi", label: "Bank materi" },
     { href: "/koordinator/kokurikuler", label: "Kokurikuler" },
     { href: "/koordinator/kegiatan", label: "Kegiatan" },
