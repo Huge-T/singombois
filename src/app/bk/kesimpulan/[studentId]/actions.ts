@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ConflictError } from "@/lib/optimisticLock";
+import { validatedLevelsInYear } from "@/lib/siswaTahunan";
 
 function assertBk(role: string | undefined) {
   if (role !== "GURU_BK" && role !== "ADMIN" && role !== "SUPER_ADMIN") {
@@ -11,22 +12,10 @@ function assertBk(role: string | undefined) {
   }
 }
 
-/** Level Gestalt yang sudah tervalidasi (pembacaan BK terbit) untuk seorang siswa.
- *  Internal saja — bukan server action (Set tidak dapat diserialisasi ke klien). */
-async function validatedLevels(studentId: string): Promise<Set<string>> {
-  const rows = await prisma.submission.findMany({
-    where: {
-      studentId,
-      session: { storyPromptId: { not: null } },
-      characterReading: { status: "PUBLISHED" },
-    },
-    select: { session: { select: { level: true } } },
-  });
-  return new Set(rows.map((r) => r.session.level));
-}
-
+/** Kesimpulan tahunan siswa: satu per siswa per tahun ajaran. */
 export async function saveConclusion(
   studentId: string,
+  academicYearId: string,
   body: string,
   publish: boolean,
   expectedUpdatedAt: string | null
@@ -38,12 +27,15 @@ export async function saveConclusion(
   const student = await prisma.student.findUnique({ where: { id: studentId } });
   if (!student || student.schoolId !== session!.user.schoolId) throw new Error("Siswa tidak ditemukan");
 
-  // Kesimpulan akhir hanya boleh terbit setelah ketiga level selesai dan
-  // masing-masing pembacaannya divalidasi (terbit) — ditegakkan di server.
+  const year = await prisma.academicYear.findUnique({ where: { id: academicYearId } });
+  if (!year || year.schoolId !== student.schoolId) throw new Error("Tahun ajaran tidak ditemukan");
+
+  // Terbit hanya bila minimal satu level tes sudah divalidasi (pembacaan BK
+  // terbit) di tahun ajaran itu — ditegakkan di server, bukan hanya tombol.
   if (publish) {
-    const levels = await validatedLevels(studentId);
-    if (!(levels.has("LOW") && levels.has("MIDDLE") && levels.has("HIGH"))) {
-      throw new Error("Ketiga level (Low, Middle, High) harus tervalidasi sebelum kesimpulan dipublikasikan");
+    const levels = await validatedLevelsInYear(studentId, academicYearId);
+    if (levels.size === 0) {
+      throw new Error(`Belum ada level tes yang tervalidasi di tahun ajaran ${year.label}, jadi belum bisa dipublikasikan`);
     }
   }
 
@@ -60,7 +52,7 @@ export async function saveConclusion(
   if (expectedUpdatedAt === null) {
     try {
       const created = await prisma.finalConclusion.create({
-        data: { studentId, ...payload, publishedAt: publish ? new Date() : null },
+        data: { studentId, academicYearId, ...payload, publishedAt: publish ? new Date() : null },
       });
       conclusionId = created.id;
       newUpdatedAt = created.updatedAt;
@@ -69,11 +61,13 @@ export async function saveConclusion(
     }
   } else {
     const result = await prisma.finalConclusion.updateMany({
-      where: { studentId, updatedAt: new Date(expectedUpdatedAt) },
+      where: { studentId, academicYearId, updatedAt: new Date(expectedUpdatedAt) },
       data: payload,
     });
     if (result.count === 0) throw new ConflictError();
-    const updated = await prisma.finalConclusion.findUniqueOrThrow({ where: { studentId } });
+    const updated = await prisma.finalConclusion.findUniqueOrThrow({
+      where: { studentId_academicYearId: { studentId, academicYearId } },
+    });
     conclusionId = updated.id;
     newUpdatedAt = updated.updatedAt;
   }
@@ -89,6 +83,7 @@ export async function saveConclusion(
   });
 
   revalidatePath(`/bk/kesimpulan/${studentId}`);
+  revalidatePath("/bk/kesimpulan");
   revalidatePath("/bk");
   revalidatePath("/siswa/data-saya");
 

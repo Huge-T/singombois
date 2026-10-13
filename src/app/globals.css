@@ -2514,6 +2514,23 @@ footer.kaki a {
 .rekap-tabel .n {
   text-align: right;
 }
+/* Mode cetak satu kartu (mis. kesimpulan tahunan siswa): bagian lain disembunyikan. */
+.hanya-cetak {
+  display: none;
+}
+@media print {
+  body.cetak-mode .main > div > *:not(.cetak-area) {
+    display: none !important;
+  }
+  body.cetak-mode .hanya-cetak {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  body.cetak-mode .cetak-area .rekap-cetak {
+    display: none !important;
+  }
+}
 @media print {
   .rekap-filter,
   .rekap-aksi,

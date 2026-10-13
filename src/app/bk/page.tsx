@@ -86,7 +86,12 @@ export default async function BkAntreanPage({
   const conclusions = await prisma.finalConclusion.findMany({
     where: { studentId: { in: readyToConclude.map(([id]) => id) } },
   });
-  const conclusionByStudent = new Map(conclusions.map((c) => [c.studentId, c]));
+  // Satu siswa bisa punya kesimpulan di beberapa tahun ajaran: tampilkan yang paling maju (terbit > draf).
+  const conclusionByStudent = new Map<string, (typeof conclusions)[number]>();
+  for (const c of conclusions) {
+    const cur = conclusionByStudent.get(c.studentId);
+    if (!cur || (cur.status !== "PUBLISHED" && c.status === "PUBLISHED")) conclusionByStudent.set(c.studentId, c);
+  }
 
   return (
     <div>

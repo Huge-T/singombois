@@ -50,7 +50,8 @@ model AcademicYear {
   endDate   DateTime
   active    Boolean  @default(true)
 
-  classes Class[]
+  classes          Class[]
+  finalConclusions FinalConclusion[]
 }
 
 model Class {
@@ -114,7 +115,7 @@ model Student {
   consultTickets      ConsultTicket[]
   feedbacks           Feedback[]
   sessionTargets      SessionStudent[]
-  finalConclusion     FinalConclusion?
+  finalConclusions    FinalConclusion[]
 
   kokurikulerAttempts    KokurikulerAttempt[]
   kokurikulerQuizTargets KokurikulerQuizStudent[]
@@ -353,16 +354,20 @@ model CharacterReading {
 // tes selesai dan tiap levelnya divalidasi. Rekap data mesin hanya alat bantu;
 // isi kesimpulan sepenuhnya keputusan manusia.
 model FinalConclusion {
-  id          String        @id @default(cuid())
-  studentId   String        @unique
-  student     Student       @relation(fields: [studentId], references: [id])
-  authorId    String
-  author      StaffUser     @relation(fields: [authorId], references: [id])
-  body        String        @db.MediumText
-  status      ReadingStatus @default(DRAFT)
-  publishedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  studentId      String
+  student        Student       @relation(fields: [studentId], references: [id])
+  academicYearId String
+  academicYear   AcademicYear  @relation(fields: [academicYearId], references: [id])
+  authorId       String
+  author         StaffUser     @relation(fields: [authorId], references: [id])
+  body           String        @db.MediumText
+  status         ReadingStatus @default(DRAFT)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([studentId, academicYearId])
 }
 
 enum TicketStatus {

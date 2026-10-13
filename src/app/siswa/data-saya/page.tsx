@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { RevokeButton } from "./RevokeButton";
+import { PrintButton } from "@/components/rekap/PrintButton";
 
 const CONSENT_LABEL: Record<string, string> = {
   GRANTED: "Disetujui wali kelas",
@@ -14,7 +15,10 @@ export default async function DataSayaPage() {
     where: { id: session!.user.id },
     include: {
       class: true,
-      finalConclusion: true,
+      finalConclusions: {
+        where: { status: "PUBLISHED" },
+        include: { academicYear: { select: { label: true, startDate: true } } },
+      },
       submissions: {
         include: { session: { select: { label: true } }, scores: true, artifacts: true },
         orderBy: { createdAt: "desc" },
@@ -23,7 +27,9 @@ export default async function DataSayaPage() {
   });
   if (!student) return null;
 
-  const conclusion = student.finalConclusion?.status === "PUBLISHED" ? student.finalConclusion : null;
+  const conclusions = [...student.finalConclusions].sort(
+    (a, b) => b.academicYear.startDate.getTime() - a.academicYear.startDate.getTime()
+  );
 
   return (
     <div>
@@ -42,17 +48,21 @@ export default async function DataSayaPage() {
         </p>
       </div>
 
-      {conclusion && (
-        <div className="card" style={{ marginBottom: 20, borderTop: "3px solid var(--singo)" }}>
-          <p className="tbl-k">KESIMPULAN AKHIR DARI GURU BK</p>
-          <p style={{ fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-line" }}>{conclusion.body}</p>
-          <p className="hint" style={{ marginTop: 10 }}>
-            Disusun Guru BK dari hasil ketiga level tes Gestalt yang sudah kamu selesaikan
-            {conclusion.publishedAt ? `, terbit ${conclusion.publishedAt.toLocaleDateString("id-ID")}` : ""}.
-            Ada yang mau didiskusikan? Buka tiket konsultasi atau temui Guru BK langsung.
+      {conclusions.map((c) => (
+        <div className="card" key={c.id} style={{ marginBottom: 20, borderTop: "3px solid var(--singo)" }}>
+          <p className="hanya-cetak">
+            <b>{student.name}</b> · NISN {student.nisn} · SINGO MBOIS SMP Negeri 27 Malang
           </p>
+          <p className="tbl-k">KESIMPULAN TAHUN AJARAN {c.academicYear.label} DARI GURU BK</p>
+          <p style={{ fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-line" }}>{c.body}</p>
+          <p className="hint" style={{ marginTop: 10 }}>
+            Disusun Guru BK dari hasil tes yang sudah kamu selesaikan di tahun ajaran ini
+            {c.publishedAt ? `, terbit ${c.publishedAt.toLocaleDateString("id-ID")}` : ""}. Ada yang mau didiskusikan?
+            Buka tiket konsultasi atau temui Guru BK langsung.
+          </p>
+          <PrintButton fokus label="Cetak kesimpulan ini" />
         </div>
-      )}
+      ))}
 
       <div className="card" style={{ marginBottom: 20 }}>
         <p className="tbl-k">RIWAYAT SESI ({student.submissions.length})</p>
