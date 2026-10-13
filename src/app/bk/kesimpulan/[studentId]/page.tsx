@@ -136,6 +136,9 @@ export default async function KesimpulanPage({
                     {k.finalScore != null ? ` · nilai ${Math.round(k.finalScore)}` : ""}
                     {k.dimensions.length > 0 &&
                       ` · ${k.dimensions.map((d) => `${d.dimension} ${d.pct}%`).join(", ")}`}
+                    {k.conclusionText && (
+                      <span style={{ display: "block", marginTop: 2 }}>{k.conclusionText}</span>
+                    )}
                   </li>
                 ))}
               </ul>

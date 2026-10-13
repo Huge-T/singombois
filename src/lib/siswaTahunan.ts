@@ -3,6 +3,7 @@ import { withRetry } from "@/lib/dbRetry";
 import type { RawFeatures } from "@/lib/analysis";
 import { interpretGestalt, type GestaltResult } from "@/lib/gestalt";
 import { summarizeKokurikulerPersonalityPattern, type DimensionTally } from "@/lib/kokurikulerPersonality";
+import { generateKokurikulerConclusion } from "@/lib/kokurikulerConclusion";
 
 /**
  * Rekap SATU siswa untuk SATU tahun ajaran: bahan Guru BK menulis kesimpulan
@@ -35,6 +36,9 @@ export interface KokurikulerYear {
   tema: string | null;
   finalScore: number | null;
   dimensions: DimensionTally[];
+  /** Kalimat kesimpulan per dimensi yang tercapai (bank kalimat tema, sama dengan kartu "bahan input rapot"); kosong bila tema tak dikenal. */
+  conclusionText: string;
+  weakDimensions: string[];
 }
 
 export interface LiterasiRow {
@@ -136,6 +140,7 @@ export async function getStudentYearRecap(studentId: string, academicYearId: str
         orderBy: { submittedAt: "asc" },
         select: {
           finalScore: true,
+          essayScore: true,
           answers: { select: { questionId: true, answerText: true, isCorrect: true } },
           quiz: {
             select: {
@@ -169,12 +174,18 @@ export async function getStudentYearRecap(studentId: string, academicYearId: str
     yearLabel: year.label,
     levels,
     validatedLevels: levels.filter((l) => l.state === "TERVALIDASI").map((l) => l.level),
-    kokurikuler: attempts.map((a) => ({
-      quizLabel: a.quiz.label,
-      tema: a.quiz.tema,
-      finalScore: a.finalScore,
-      dimensions: summarizeKokurikulerPersonalityPattern(a.quiz.questions, a.answers).dimensionTallies,
-    })),
+    kokurikuler: attempts.map((a) => {
+      const dimensions = summarizeKokurikulerPersonalityPattern(a.quiz.questions, a.answers).dimensionTallies;
+      const kes = generateKokurikulerConclusion(a.quiz.tema, dimensions, a.essayScore);
+      return {
+        quizLabel: a.quiz.label,
+        tema: a.quiz.tema,
+        finalScore: a.finalScore,
+        dimensions,
+        conclusionText: kes?.text ?? "",
+        weakDimensions: kes?.weakDimensions ?? [],
+      };
+    }),
     literasi: literasiSubs.map((s) => ({
       sessionLabel: s.session.label,
       reading: s.scores[0]?.reading ?? null,
@@ -227,30 +238,38 @@ export function buildConclusionDraft(recap: StudentYearRecap): string {
   const strengthTitles = [...new Set(validated.flatMap((l) => l.strengths.map((s) => s.title)))];
   if (strengthTitles.length) paragraphs.push(`Potensi yang dibaca Guru BK dari tulisanmu: ${daftar(strengthTitles)}.`);
 
-  const dimByName = new Map<string, number[]>();
-  for (const k of recap.kokurikuler) {
-    for (const d of k.dimensions) {
-      if (d.total === 0) continue;
-      if (!dimByName.has(d.dimension)) dimByName.set(d.dimension, []);
-      dimByName.get(d.dimension)!.push(d.pct);
+  // Kokurikuler: pakai kalimat kesimpulan tema (sama dengan kartu "bahan input rapot")
+  // bila tersedia; kalau tema tak dikenal, jatuh ke ringkasan persen per dimensi.
+  const kokTexts = [...new Set(recap.kokurikuler.map((k) => k.conclusionText).filter(Boolean))];
+  if (kokTexts.length) {
+    let t = `Dari kuis kokurikuler: ${kokTexts.join(" ")}`;
+    const weak = [...new Set(recap.kokurikuler.flatMap((k) => k.weakDimensions))];
+    if (weak.length) t += ` Dimensi ${daftar(weak)} masih perlu dilatih lagi.`;
+    paragraphs.push(t);
+  } else {
+    const dimByName = new Map<string, number[]>();
+    for (const k of recap.kokurikuler) {
+      for (const d of k.dimensions) {
+        if (d.total === 0) continue;
+        if (!dimByName.has(d.dimension)) dimByName.set(d.dimension, []);
+        dimByName.get(d.dimension)!.push(d.pct);
+      }
     }
-  }
-  const dims = [...dimByName.entries()]
-    .map(([name, p]) => ({ name, pct: Math.round(p.reduce((a, b) => a + b, 0) / p.length) }))
-    .sort((a, b) => b.pct - a.pct);
-  if (dims.length) {
-    // Kalimat menyesuaikan hasil: tidak ada "menonjol" untuk skor rendah, dan tanpa angka
-    // bila hasilnya masih jauh dari kuat (ini ditulis ke siswa; BK yang menyempurnakan).
-    const best = dims[0];
-    const lemah = dims.filter((d) => d.pct < AMBANG_KUAT_DRAF).map((d) => d.name);
-    if (best.pct >= AMBANG_KUAT_DRAF) {
-      let t = `Dari kuis kokurikuler, dimensi yang paling menonjol adalah ${best.name} (${best.pct}% jawaban sesuai).`;
-      if (lemah.length) t += ` Dimensi ${daftar(lemah)} masih bisa terus dilatih.`;
-      paragraphs.push(t);
-    } else {
-      paragraphs.push(
-        `Hasil kuis kokurikuler tahun ini menunjukkan masih banyak ruang untuk berlatih, terutama pada dimensi ${daftar(dims.map((d) => d.name))}. Ini bisa dikembangkan pelan-pelan lewat latihan dan pendampingan.`
-      );
+    const dims = [...dimByName.entries()]
+      .map(([name, p]) => ({ name, pct: Math.round(p.reduce((a, b) => a + b, 0) / p.length) }))
+      .sort((a, b) => b.pct - a.pct);
+    if (dims.length) {
+      const best = dims[0];
+      const lemah = dims.filter((d) => d.pct < AMBANG_KUAT_DRAF).map((d) => d.name);
+      if (best.pct >= AMBANG_KUAT_DRAF) {
+        let t = `Dari kuis kokurikuler, dimensi yang paling menonjol adalah ${best.name} (${best.pct}% jawaban sesuai).`;
+        if (lemah.length) t += ` Dimensi ${daftar(lemah)} masih bisa terus dilatih.`;
+        paragraphs.push(t);
+      } else {
+        paragraphs.push(
+          `Hasil kuis kokurikuler tahun ini menunjukkan masih banyak ruang untuk berlatih, terutama pada dimensi ${daftar(dims.map((d) => d.name))}. Ini bisa dikembangkan pelan-pelan lewat latihan dan pendampingan.`
+        );
+      }
     }
   }
 
