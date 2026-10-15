@@ -68,10 +68,15 @@ export default async function KelolaKokurikulerPage({ params }: { params: Promis
         </div>
       )}
 
-      <p style={{ marginTop: 20 }}>
+      <p style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
         <Link className="btn btn-ghost btn-sm" href={`/guru/kokurikuler/${quiz.id}/hasil`}>
           Lihat hasil siswa
         </Link>
+        {quiz.worksheetTemplateId && quiz.questions.some((q) => q.type === "URAIAN") && (
+          <Link className="btn btn-ghost btn-sm" href={`/guru/kokurikuler/${quiz.id}/cetak`}>
+            Cetak lembar uraian siswa
+          </Link>
+        )}
       </p>
     </div>
   );

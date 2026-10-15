@@ -47,6 +47,11 @@ export default async function KokurikulerListPage() {
             <Link className="btn btn-ghost btn-sm" href={`/guru/kokurikuler/${q.id}/hasil`}>
               Lihat hasil
             </Link>
+            {q.worksheetTemplateId && (
+              <Link className="btn btn-ghost btn-sm" href={`/guru/kokurikuler/${q.id}/cetak`}>
+                Cetak lembar uraian
+              </Link>
+            )}
             <DeleteQuizButton quizId={q.id} label={q.label} />
           </div>
         </div>
