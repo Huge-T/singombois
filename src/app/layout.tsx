@@ -1,41 +1,43 @@
 import type { Metadata } from "next";
-import {
-  Bricolage_Grotesque,
-  Plus_Jakarta_Sans,
-  Homemade_Apple,
-  Caveat,
-  IBM_Plex_Mono,
-} from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
+// Font dipasang di dalam proyek (subset latin, berkas dari Google Fonts), bukan
+// diunduh saat build: build di Hostinger sesekali gagal karena respons Google
+// Fonts tidak lengkap ("next/font ... Cannot read properties of null").
+const display = localFont({
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "600", "800"],
+  src: [{ path: "./fonts/BricolageGrotesque-latin.woff2", weight: "200 800", style: "normal" }],
+  display: "swap",
+  adjustFontFallback: "Arial",
 });
 
-const body = Plus_Jakarta_Sans({
+const body = localFont({
   variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  src: [{ path: "./fonts/PlusJakartaSans-latin.woff2", weight: "200 800", style: "normal" }],
+  display: "swap",
+  adjustFontFallback: "Arial",
 });
 
-const tanganSiswa = Homemade_Apple({
+const tanganSiswa = localFont({
   variable: "--font-tangan-siswa",
-  subsets: ["latin"],
-  weight: "400",
+  src: [{ path: "./fonts/HomemadeApple-latin.woff2", weight: "400", style: "normal" }],
+  display: "swap",
 });
 
-const tanganGuru = Caveat({
+const tanganGuru = localFont({
   variable: "--font-tangan-guru",
-  subsets: ["latin"],
-  weight: ["600"],
+  src: [{ path: "./fonts/Caveat-600-latin.woff2", weight: "600", style: "normal" }],
+  display: "swap",
 });
 
-const data = IBM_Plex_Mono({
+const data = localFont({
   variable: "--font-data",
-  subsets: ["latin"],
-  weight: ["400", "500"],
+  src: [
+    { path: "./fonts/IBMPlexMono-400-latin.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/IBMPlexMono-500-latin.woff2", weight: "500", style: "normal" },
+  ],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
