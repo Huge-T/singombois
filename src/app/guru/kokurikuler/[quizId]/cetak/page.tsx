@@ -1,4 +1,3 @@
-import QRCode from "qrcode";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -53,15 +52,6 @@ export default async function CetakLembarUraianPage({ params }: { params: Promis
   });
 
   const sheets = students.flatMap((student) => essayQuestions.map((question) => ({ student, question })));
-  const qrDataUrls = await Promise.all(
-    sheets.map(({ student, question }) =>
-      QRCode.toDataURL(JSON.stringify({ quizId: quiz.id, studentId: student.id, questionId: question.id }), {
-        margin: 0,
-        width: 200,
-      })
-    )
-  );
-
   const lineHeightMm = template.lineHeightMm;
 
   return (
@@ -102,7 +92,7 @@ export default async function CetakLembarUraianPage({ params }: { params: Promis
         <p className="hint">Matikan opsi &quot;Fit to page&quot; di dialog cetak agar 1mm di kertas = 1mm sungguhan.</p>
       </div>
 
-      {sheets.map(({ student, question }, i) => (
+      {sheets.map(({ student, question }) => (
         <div className="print-page" key={`${student.id}-${question.id}`}>
           <div className="corner" style={{ top: 0, left: 0 }} />
           <div className="corner" style={{ top: 0, right: 0 }} />
@@ -123,8 +113,6 @@ export default async function CetakLembarUraianPage({ params }: { params: Promis
               </p>
               <p style={{ fontSize: 10, color: "#7C8590" }}>Template: {template.name}</p>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrls[i]} alt="QR identifikasi lembar" width={64} height={64} />
           </div>
 
           <div style={{ marginTop: "5mm", padding: "2.5mm 3mm", border: "0.3mm solid #16232F" }}>

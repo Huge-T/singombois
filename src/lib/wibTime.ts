@@ -10,6 +10,11 @@ export function parseWibDateTimeLocal(value: string): Date {
 
 const WIB_OFFSET_MS = 7 * 3600 * 1000;
 
+/** Kebalikan parseWibDateTimeLocal: Date → "YYYY-MM-DDTHH:mm" dalam WIB (nilai awal input datetime-local). */
+export function formatWibDateTimeLocal(date: Date): string {
+  return new Date(date.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 16);
+}
+
 // Batas hari kalender (mis. untuk grafik "per hari") harus mengikuti tengah
 // malam WIB, bukan tengah malam server (Vercel = UTC) — kalau tidak, jam
 // 17:00-24:00 WIB ikut terhitung "kemarin" karena UTC-nya belum ganti hari.

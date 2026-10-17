@@ -40,7 +40,7 @@ export default async function SiswaKokurikulerListPage() {
               <div>
                 <h3 style={{ fontFamily: "var(--disp)", fontSize: 19, marginBottom: 4 }}>{q.label}</h3>
                 <p style={{ fontSize: 12.5, color: "var(--graphite)", fontFamily: "var(--data)" }}>
-                  {q.tema ? `TEMA ${q.tema.toUpperCase()} · ` : ""}TUTUP {q.closesAt.toLocaleDateString("id-ID")}
+                  {q.tema ? `TEMA ${q.tema.toUpperCase()} · ` : ""}TUTUP {q.closesAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB
                 </p>
               </div>
               <span className={`pill ${done ? "pill-ok" : "pill-mark"}`}>

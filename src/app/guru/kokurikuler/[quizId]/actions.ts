@@ -7,6 +7,7 @@ import { parseKokurikulerQuestionsCsv } from "@/lib/kokurikulerCsv";
 import { deleteUploadedFile } from "@/lib/storage";
 import { withRetry } from "@/lib/dbRetry";
 import { resetKokurikulerDimensionCore } from "@/lib/kokurikulerAccess";
+import { parseWibDateTimeLocal } from "@/lib/wibTime";
 
 async function requireQuizOwner(quizId: string) {
   const session = await auth();
@@ -97,6 +98,52 @@ export async function closeKokurikulerQuiz(quizId: string) {
   revalidatePath(`/guru/kokurikuler/${quizId}`);
   revalidatePath("/guru/kokurikuler");
   revalidatePath("/siswa/kokurikuler");
+}
+
+export interface ScheduleState {
+  error?: string;
+  ok?: string;
+}
+
+/**
+ * Ubah jadwal buka/tutup kuis yang sudah dibuat, supaya siswa yang belum
+ * selesai bisa diberi waktu tambahan tanpa membuat kuis baru. `reopen` sekaligus
+ * membuka kembali kuis yang berstatus CLOSED (butuh waktu tutup di masa depan).
+ */
+export async function updateKokurikulerQuizSchedule(
+  quizId: string,
+  opensAtRaw: string,
+  closesAtRaw: string,
+  reopen: boolean
+): Promise<ScheduleState> {
+  const { quiz } = await requireQuizOwner(quizId);
+
+  if (!opensAtRaw || !closesAtRaw) return { error: "Isi tanggal & jam buka dan tutup." };
+  const opensAt = parseWibDateTimeLocal(opensAtRaw);
+  const closesAt = parseWibDateTimeLocal(closesAtRaw);
+  if (Number.isNaN(opensAt.getTime()) || Number.isNaN(closesAt.getTime())) {
+    return { error: "Format tanggal atau jam tidak valid." };
+  }
+  if (closesAt <= opensAt) return { error: "Waktu tutup harus setelah waktu buka." };
+
+  const willBeOpen = reopen || quiz.status === "OPEN";
+  if (willBeOpen && closesAt <= new Date()) {
+    return { error: "Waktu tutup sudah lewat. Pilih waktu tutup di masa depan agar siswa bisa mengerjakan." };
+  }
+
+  const questionCount = reopen ? await prisma.kokurikulerQuestion.count({ where: { quizId } }) : 1;
+  if (reopen && questionCount === 0) return { error: "Tambahkan soal dulu sebelum membuka kuis." };
+
+  await prisma.kokurikulerQuiz.update({
+    where: { id: quizId },
+    data: { opensAt, closesAt, ...(reopen ? { status: "OPEN" as const } : {}) },
+  });
+
+  revalidatePath(`/guru/kokurikuler/${quizId}`);
+  revalidatePath("/guru/kokurikuler");
+  revalidatePath("/siswa/kokurikuler");
+  revalidatePath(`/siswa/kokurikuler/${quizId}`);
+  return { ok: reopen ? "Jadwal disimpan dan kuis dibuka kembali untuk siswa." : "Jadwal disimpan." };
 }
 
 export async function resetKokurikulerDimension(quizId: string, attemptId: string, dimension: string) {

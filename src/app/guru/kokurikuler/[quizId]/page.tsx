@@ -3,7 +3,9 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { loadQuizForViewer } from "@/lib/kokurikulerAccess";
 import { UploadQuestionsForm } from "./UploadQuestionsForm";
+import { formatWibDateTimeLocal } from "@/lib/wibTime";
 import { openKokurikulerQuiz, closeKokurikulerQuiz } from "./actions";
+import { ScheduleForm } from "./ScheduleForm";
 
 const TYPE_LABEL: Record<string, string> = {
   PILIHAN_GANDA: "Pilihan ganda",
@@ -17,7 +19,10 @@ export default async function KelolaKokurikulerPage({ params }: { params: Promis
   const quiz = await loadQuizForViewer(quizId, session!.user);
   if (!quiz) notFound();
 
-  const isOwner = quiz.createdById === session!.user.id;
+  const isOwner =
+    quiz.createdById === session!.user.id || session!.user.role === "ADMIN" || session!.user.role === "SUPER_ADMIN";
+  const expired = quiz.closesAt <= new Date();
+  const needsReopen = quiz.status === "CLOSED" || (quiz.status === "OPEN" && expired);
 
   return (
     <div>
@@ -26,6 +31,15 @@ export default async function KelolaKokurikulerPage({ params }: { params: Promis
       <p className="sub">
         {quiz.class.name} {quiz.tema ? `· Tema ${quiz.tema}` : ""} · <span className="pill">{quiz.status}</span>
       </p>
+
+      {isOwner && (
+        <ScheduleForm
+          quizId={quiz.id}
+          initialOpensAt={formatWibDateTimeLocal(quiz.opensAt)}
+          initialClosesAt={formatWibDateTimeLocal(quiz.closesAt)}
+          needsReopen={needsReopen}
+        />
+      )}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <p className="tbl-k">SOAL ({quiz.questions.length})</p>
@@ -58,11 +72,6 @@ export default async function KelolaKokurikulerPage({ params }: { params: Promis
           {quiz.status === "OPEN" && (
             <form action={closeKokurikulerQuiz.bind(null, quiz.id)}>
               <button className="btn btn-ghost">Tutup kuis</button>
-            </form>
-          )}
-          {quiz.status === "CLOSED" && (
-            <form action={openKokurikulerQuiz.bind(null, quiz.id)}>
-              <button className="btn">Buka lagi untuk siswa</button>
             </form>
           )}
         </div>
