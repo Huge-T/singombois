@@ -1,4 +1,3 @@
-import QRCode from "qrcode";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -31,24 +30,6 @@ export default async function CetakLembarKerjaPage({ params }: { params: Promise
     },
     orderBy: { name: "asc" },
   });
-
-  // Pre-create submissions so each printed sheet's QR encodes a real, stable
-  // submission id — this is the v1 groundwork for QR auto-linking (UP-2);
-  // the upload endpoint itself still relies on the logged-in student session
-  // rather than decoding the QR, which is the honest scope boundary for now.
-  const submissions = await Promise.all(
-    students.map((s) =>
-      prisma.submission.upsert({
-        where: { sessionId_studentId: { sessionId: id, studentId: s.id } },
-        update: {},
-        create: { sessionId: id, studentId: s.id },
-      })
-    )
-  );
-
-  const qrDataUrls = await Promise.all(
-    submissions.map((sub) => QRCode.toDataURL(JSON.stringify({ submissionId: sub.id }), { margin: 0, width: 200 }))
-  );
 
   const lineHeightMm = literacySession.worksheetTemplate.lineHeightMm;
   const isGestalt = Boolean(literacySession.storyPrompt);
@@ -95,7 +76,7 @@ export default async function CetakLembarKerjaPage({ params }: { params: Promise
         <p className="hint">Matikan opsi &quot;Fit to page&quot; di dialog cetak agar 1mm di kertas = 1mm sungguhan.</p>
       </div>
 
-      {students.map((student, i) => (
+      {students.map((student) => (
         <div className="print-page" key={student.id}>
           <div className="corner" style={{ top: 0, left: 0 }} />
           <div className="corner" style={{ top: 0, right: 0 }} />
@@ -114,8 +95,6 @@ export default async function CetakLembarKerjaPage({ params }: { params: Promise
               </p>
               <p style={{ fontSize: 10, color: "#7C8590" }}>Template: {literacySession.worksheetTemplate.name}</p>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrls[i]} alt="QR identifikasi lembar" width={64} height={64} />
           </div>
 
           {isGestalt ? (
