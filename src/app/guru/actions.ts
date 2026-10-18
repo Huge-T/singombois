@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteUploadedFile } from "@/lib/storage";
 import { withRetry } from "@/lib/dbRetry";
+import { parseWibDateTimeLocal } from "@/lib/wibTime";
 
 export async function deleteSession(sessionId: string) {
   const session = await auth();
@@ -54,4 +55,54 @@ export async function deleteSession(sessionId: string) {
   );
 
   revalidatePath("/guru");
+}
+
+export interface SessionScheduleState {
+  error?: string;
+  ok?: string;
+}
+
+/**
+ * Ubah jadwal buka/tutup sesi literasi agar siswa yang belum selesai bisa
+ * diberi waktu tambahan tanpa membuat sesi baru. Sesi yang sudah CLOSED
+ * otomatis dibuka lagi bila waktu tutup barunya di masa depan.
+ */
+export async function updateSessionSchedule(
+  sessionId: string,
+  opensAtRaw: string,
+  closesAtRaw: string
+): Promise<SessionScheduleState> {
+  const session = await auth();
+  const role = session?.user.role;
+  if (!session?.user || (role !== "TEACHER" && role !== "ADMIN" && role !== "SUPER_ADMIN")) {
+    throw new Error("Tidak diizinkan");
+  }
+  const target = await withRetry(() => prisma.session.findUnique({ where: { id: sessionId } }));
+  if (!target) throw new Error("Sesi tidak ditemukan");
+  const isOwner = target.createdById === session.user.id || role === "ADMIN" || role === "SUPER_ADMIN";
+  if (!isOwner) throw new Error("Tidak diizinkan");
+
+  if (!opensAtRaw || !closesAtRaw) return { error: "Isi tanggal & jam buka dan tutup." };
+  const opensAt = parseWibDateTimeLocal(opensAtRaw);
+  const closesAt = parseWibDateTimeLocal(closesAtRaw);
+  if (Number.isNaN(opensAt.getTime()) || Number.isNaN(closesAt.getTime())) {
+    return { error: "Format tanggal atau jam tidak valid." };
+  }
+  if (closesAt <= opensAt) return { error: "Waktu tutup harus setelah waktu buka." };
+
+  const reopen = target.status === "CLOSED";
+  const willBeOpen = reopen || target.status === "OPEN";
+  if (willBeOpen && closesAt <= new Date()) {
+    return { error: "Waktu tutup sudah lewat. Pilih waktu tutup di masa depan agar siswa bisa mengerjakan." };
+  }
+
+  await prisma.session.update({
+    where: { id: sessionId },
+    data: { opensAt, closesAt, ...(reopen ? { status: "OPEN" as const } : {}) },
+  });
+
+  revalidatePath("/guru");
+  revalidatePath("/siswa");
+  revalidatePath(`/siswa/sesi/${sessionId}`);
+  return { ok: reopen ? "Jadwal disimpan dan sesi dibuka kembali untuk siswa." : "Jadwal disimpan." };
 }

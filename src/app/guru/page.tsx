@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { formatWibDateTimeLocal } from "@/lib/wibTime";
 import { DeleteSessionButton } from "./DeleteSessionButton";
+import { SessionScheduleEditor } from "./SessionScheduleEditor";
 
 export default async function GuruDashboard() {
   const session = await auth();
+  const now = new Date();
   const sessions = await prisma.session.findMany({
     where: { createdById: session!.user.id },
     include: {
@@ -52,6 +55,12 @@ export default async function GuruDashboard() {
               <DeleteSessionButton sessionId={s.id} label={s.label} />
             </div>
           </div>
+          <SessionScheduleEditor
+            sessionId={s.id}
+            initialOpensAt={formatWibDateTimeLocal(s.opensAt)}
+            initialClosesAt={formatWibDateTimeLocal(s.closesAt)}
+            needsReopen={s.status === "CLOSED" || (s.status === "OPEN" && s.closesAt <= now)}
+          />
         </div>
       ))}
     </div>
