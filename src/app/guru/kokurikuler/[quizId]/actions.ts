@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { parseKokurikulerQuestionsCsv } from "@/lib/kokurikulerCsv";
 import { deleteUploadedFile } from "@/lib/storage";
 import { withRetry } from "@/lib/dbRetry";
-import { resetKokurikulerDimensionCore } from "@/lib/kokurikulerAccess";
+import { resetKokurikulerDimensionCore, resetKokurikulerObjectiveCore } from "@/lib/kokurikulerAccess";
 import { parseWibDateTimeLocal } from "@/lib/wibTime";
 
 async function requireQuizOwner(quizId: string) {
@@ -159,6 +159,22 @@ export async function resetKokurikulerDimension(quizId: string, attemptId: strin
   revalidatePath(`/koordinator/kokurikuler/${quizId}/hasil/${attemptId}`);
   revalidatePath(`/bk/kokurikuler/${attemptId}`);
   revalidatePath(`/siswa/kokurikuler/${quizId}`);
+}
+
+export async function resetKokurikulerAttempt(quizId: string, attemptId: string) {
+  await requireQuizOwner(quizId);
+
+  const attempt = await prisma.kokurikulerAttempt.findUnique({ where: { id: attemptId } });
+  if (!attempt || attempt.quizId !== quizId) throw new Error("Attempt tidak ditemukan");
+
+  await resetKokurikulerObjectiveCore(attemptId);
+
+  revalidatePath(`/guru/kokurikuler/${quizId}/hasil/${attemptId}`);
+  revalidatePath(`/guru/kokurikuler/${quizId}/hasil`);
+  revalidatePath(`/koordinator/kokurikuler/${quizId}/hasil/${attemptId}`);
+  revalidatePath(`/bk/kokurikuler/${attemptId}`);
+  revalidatePath(`/siswa/kokurikuler/${quizId}`);
+  revalidatePath("/siswa/kokurikuler");
 }
 
 export async function deleteKokurikulerQuiz(quizId: string) {

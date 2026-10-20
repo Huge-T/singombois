@@ -1,12 +1,12 @@
 import type { DimensionTally } from "@/lib/kokurikulerPersonality";
 
 /**
- * Kesimpulan otomatis per tema kokurikuler untuk membantu wali kelas mengisi
+ * Kesimpulan otomatis per kuis kokurikuler untuk membantu wali kelas mengisi
  * rapot — beda dari summarizeKokurikulerPersonalityPattern (yang cuma tally
- * mekanis tanpa kalimat), ini merangkai kalimat siap pakai dari bank kalimat
- * per dimensi. Hanya tersedia untuk tema yang sudah didaftarkan di bawah;
- * tema lain (atau tanpa tema) tidak menghasilkan kesimpulan sama sekali,
- * bukan menebak-nebak kalimat generik.
+ * mekanis tanpa kalimat), ini merangkai kalimat siap pakai per dimensi.
+ * Urutan pencarian kalimat: bank khusus tema (bila ada) → bank dimensi umum
+ * (delapan dimensi profil lulusan) → kalimat generik berbasis nama dimensi.
+ * Jadi kuis tema apa pun tetap mendapat kesimpulan selama soalnya bertag dimensi.
  */
 
 // Ambang batas "tercapai": >= ini dianggap mampu, deskripsi dimensinya
@@ -16,7 +16,7 @@ const ACHIEVED_THRESHOLD_PCT = 70;
 
 // Kunci tema dicocokkan case-insensitive & trim, supaya "GEMATI"/"gemati "
 // dari input guru yang bebas ketik tetap kena.
-const CONCLUSION_SENTENCES: Record<string, Record<string, string>> = {
+const THEME_SENTENCES: Record<string, Record<string, string>> = {
   gemati: {
     Kemandirian: "Ananda mampu menunjukkan kemandirian dalam memahami dan menyelesaikan permasalahan dengan baik.",
     Kreativitas: "Ananda mampu mengembangkan gagasan dan memaknai berbagai situasi secara kreatif dengan baik.",
@@ -25,6 +25,29 @@ const CONCLUSION_SENTENCES: Record<string, Record<string, string>> = {
     "Penalaran Kritis": "Ananda mampu menganalisis informasi dan permasalahan secara kritis dan objektif dengan baik.",
   },
 };
+
+// Bank dimensi umum (dimensi profil lulusan), dicocokkan lewat awalan nama
+// dimensi (huruf kecil) supaya "Keimanan dan Ketakwaan" / "Keimanan dan
+// Ketakwaan terhadap Tuhan YME" sama-sama kena.
+const DIMENSION_SENTENCES: [prefix: string, sentence: string][] = [
+  ["keimanan", "Ananda mampu menunjukkan keimanan dan ketakwaan kepada Tuhan Yang Maha Esa dalam sikap dan perilaku sehari-hari dengan baik."],
+  ["kewargaan", "Ananda mampu memahami dan menunjukkan nilai-nilai kewargaan serta kepedulian terhadap kehidupan bersama dengan baik."],
+  ["penalaran", "Ananda mampu menganalisis informasi dan permasalahan secara kritis dan objektif dengan baik."],
+  ["kreativitas", "Ananda mampu mengembangkan gagasan dan memaknai berbagai situasi secara kreatif dengan baik."],
+  ["kolaborasi", "Ananda mampu bekerja sama dengan orang lain untuk mencapai tujuan bersama dengan baik."],
+  ["kemandirian", "Ananda mampu menunjukkan kemandirian dalam memahami dan menyelesaikan permasalahan dengan baik."],
+  ["kesehatan", "Ananda mampu menunjukkan kesadaran untuk menjaga kesehatan fisik dan mentalnya dengan baik."],
+  ["komunikasi", "Ananda mampu menyampaikan dan memahami gagasan dalam berbagai situasi dengan baik."],
+];
+
+function sentenceFor(tema: string | null | undefined, dimension: string): string {
+  const themed = tema ? THEME_SENTENCES[tema.trim().toLowerCase()] : undefined;
+  if (themed && dimension in themed) return themed[dimension];
+  const key = dimension.trim().toLowerCase();
+  const general = DIMENSION_SENTENCES.find(([prefix]) => key.startsWith(prefix));
+  if (general) return general[1];
+  return `Ananda menunjukkan capaian yang baik pada dimensi ${dimension.trim()}.`;
+}
 
 export interface KokurikulerConclusionResult {
   tema: string;
@@ -38,40 +61,37 @@ export interface KokurikulerConclusionResult {
   combinedScore: number | null;
 }
 
-/** null kalau tema tidak dikenali (belum ada bank kalimatnya) — fitur ini
- *  tidak menampilkan apa pun untuk tema di luar daftar, alih-alih menebak. */
+/** null hanya bila kuis tidak punya soal bertag dimensi (tidak ada yang bisa disimpulkan). */
 export function generateKokurikulerConclusion(
   tema: string | null | undefined,
   dimensionTallies: DimensionTally[],
   essayScore: number | null
 ): KokurikulerConclusionResult | null {
-  if (!tema) return null;
-  const bank = CONCLUSION_SENTENCES[tema.trim().toLowerCase()];
-  if (!bank) return null;
+  const tracked = dimensionTallies.filter((t) => t.total > 0);
+  if (tracked.length === 0) return null;
 
   const achievedDimensions: string[] = [];
   const weakDimensions: string[] = [];
   const sentences: string[] = [];
   const trackedPct: number[] = [];
 
-  for (const t of dimensionTallies) {
-    if (!(t.dimension in bank)) continue; // dimensi di luar bank kalimat tema ini, lewati
+  for (const t of tracked) {
     trackedPct.push(t.pct);
     if (t.pct >= ACHIEVED_THRESHOLD_PCT) {
       achievedDimensions.push(t.dimension);
-      sentences.push(bank[t.dimension]);
+      sentences.push(sentenceFor(tema, t.dimension));
     } else {
       weakDimensions.push(t.dimension);
     }
   }
 
-  const allAchieved = trackedPct.length > 0 && weakDimensions.length === 0;
-  const dimensionAveragePct = trackedPct.length > 0 ? trackedPct.reduce((a, b) => a + b, 0) / trackedPct.length : 0;
+  const allAchieved = weakDimensions.length === 0;
+  const dimensionAveragePct = trackedPct.reduce((a, b) => a + b, 0) / trackedPct.length;
   const combinedScore =
     allAchieved && essayScore !== null ? Math.round(((dimensionAveragePct + essayScore) / 2) * 10) / 10 : null;
 
   return {
-    tema,
+    tema: tema ?? "",
     text: sentences.join(" "),
     achievedDimensions,
     weakDimensions,

@@ -70,18 +70,27 @@ export function canWriteKokurikulerReading(viewer: KokurikulerViewer, quiz: { cr
  *  saat sebuah dimensi masih di bawah ambang tercapai. Otorisasi dicek di
  *  pemanggil (actions.ts masing-masing role), bukan di sini. */
 export async function resetKokurikulerDimensionCore(attemptId: string, dimension: string) {
+  await resetObjectiveAnswers(attemptId, dimension);
+}
+
+/** Buka ulang SELURUH soal objektif attempt (PG/Benar-Salah) — esai foto tetap utuh.
+ *  Untuk siswa yang mengumpulkan kosong/asal dan perlu mengulang dari awal. */
+export async function resetKokurikulerObjectiveCore(attemptId: string) {
+  await resetObjectiveAnswers(attemptId, null);
+}
+
+async function resetObjectiveAnswers(attemptId: string, dimension: string | null) {
   const attempt = await prisma.kokurikulerAttempt.findUnique({ where: { id: attemptId }, select: { quizId: true } });
   if (!attempt) throw new Error("Attempt tidak ditemukan");
 
   // Dibatasi ke soal objektif saja (bukan URAIAN) — itu yang dipakai
-  // dimensionTallies untuk menghitung persentase. Kalau soal URAIAN foto
-  // kebetulan pakai tag dimensi yang sama, jawabannya (KokurikulerAnswer)
-  // masih dipegang KokurikulerArtifact-nya — menghapusnya di sini akan
-  // melanggar foreign key, jadi sengaja dilewati.
+  // dimensionTallies untuk menghitung persentase. Jawaban URAIAN foto masih
+  // dipegang KokurikulerArtifact-nya — menghapusnya akan melanggar foreign key,
+  // jadi sengaja dilewati.
   const questions = await prisma.kokurikulerQuestion.findMany({
     where: {
       quizId: attempt.quizId,
-      personalityDimension: dimension,
+      ...(dimension ? { personalityDimension: dimension } : {}),
       type: { in: ["PILIHAN_GANDA", "BENAR_SALAH"] },
     },
     select: { id: true },

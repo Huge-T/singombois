@@ -69,8 +69,8 @@ export function AttemptDetail({
     reading: ReadingForDetail | null;
   };
   showDraftReading: boolean;
-  /** Tema kuis (mis. "GEMATI") — dipakai mencari bank kalimat kesimpulan;
-   *  tema di luar bank yang dikenal tidak menghasilkan kesimpulan sama sekali. */
+  /** Tema kuis (mis. "GEMATI") — kalimat kesimpulan khusus tema dipakai bila ada,
+   *  kalau tidak kalimat dimensi umum. */
   tema?: string | null;
   /** Tombol "ulangi dimensi ini" per baris dimensi di bawah ambang — halaman
    *  pemanggil yang menyediakan tombolnya (butuh otorisasi & quizId/attemptId

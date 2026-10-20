@@ -5,6 +5,7 @@ import { AttemptDetail } from "@/components/kokurikuler/AttemptDetail";
 import { KokurikulerReadingForm, type IndicationItem } from "@/components/kokurikuler/KokurikulerReadingForm";
 import { EssayGradeForm } from "./EssayGradeForm";
 import { ResetDimensionButton } from "./ResetDimensionButton";
+import { ResetAttemptButton } from "./ResetAttemptButton";
 import { saveKokurikulerReadingAsGuru } from "./actions";
 
 export default async function GuruKokurikulerAttemptPage({
@@ -24,12 +25,33 @@ export default async function GuruKokurikulerAttemptPage({
   const hasEssayQuestions = quiz.questions.some((q) => q.type === "URAIAN");
   const canGrade = canGradeEssay(viewer, quiz);
   const canWriteReading = canWriteKokurikulerReading(viewer, quiz);
+  const now = new Date();
+  const quizOpenNow = quiz.status === "OPEN" && now >= quiz.opensAt && now <= quiz.closesAt;
+  const essayIds = new Set(quiz.questions.filter((q) => q.type === "URAIAN").map((q) => q.id));
+  const hasObjective = attempt.answers.some((a) => !essayIds.has(a.questionId));
   const initialIndications: IndicationItem[] = attempt.reading ? JSON.parse(attempt.reading.indicationsJson) : [];
 
   return (
     <div>
       <p className="crumb">GURU · {quiz.label}</p>
       <h2 className="h2">Hasil {attempt.student.name}</h2>
+
+      {canGrade && hasObjective && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <p className="tbl-k">BUKA ULANG KUIS</p>
+          <p className="hint" style={{ marginBottom: 8 }}>
+            Untuk siswa yang hasilnya kosong atau ingin diberi kesempatan mengulang dari awal.
+          </p>
+          <ResetAttemptButton quizId={quiz.id} attemptId={attempt.id} />
+          {!quizOpenNow && (
+            <p className="hint" style={{ marginTop: 8 }}>
+              Kuis ini sedang tidak dibuka untuk siswa (ditutup atau di luar waktu pengerjaan). Setelah mengulang,
+              ubah jadwalnya dulu di halaman <a href={`/guru/kokurikuler/${quiz.id}`}>Kelola soal</a> supaya siswa
+              bisa mengerjakan.
+            </p>
+          )}
+        </div>
+      )}
 
       <AttemptDetail
         questions={quiz.questions}
