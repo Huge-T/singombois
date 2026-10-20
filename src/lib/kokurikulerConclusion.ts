@@ -12,7 +12,7 @@ import type { DimensionTally } from "@/lib/kokurikulerPersonality";
 // Ambang batas "tercapai": >= ini dianggap mampu, deskripsi dimensinya
 // masuk kesimpulan. Di bawah ini dianggap "jelek", dimensinya dilewati dan
 // siswa perlu mengulang kuis untuk memperbaiki dimensi itu.
-const ACHIEVED_THRESHOLD_PCT = 70;
+export const ACHIEVED_THRESHOLD_PCT = 70;
 
 // Kunci tema dicocokkan case-insensitive & trim, supaya "GEMATI"/"gemati "
 // dari input guru yang bebas ketik tetap kena.

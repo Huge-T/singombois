@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { summarizeKokurikulerPersonalityPattern } from "@/lib/kokurikulerPersonality";
+import { ACHIEVED_THRESHOLD_PCT } from "@/lib/kokurikulerConclusion";
+import { RetryButton } from "./RetryButton";
 
 interface IndicationItem {
   dimension: string;
@@ -37,6 +40,14 @@ export default async function SiswaKokurikulerHasilPage({ params }: { params: Pr
 
   const answerByQuestionId = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const uraianAnswers = attempt.answers.filter((a) => a.artifact?.accepted);
+  const tallies = summarizeKokurikulerPersonalityPattern(quiz.questions, attempt.answers).dimensionTallies;
+  const weakDims = tallies.filter((t) => t.total > 0 && t.pct < ACHIEVED_THRESHOLD_PCT).map((t) => t.dimension);
+  const overallLow =
+    tallies.length === 0 && (attempt.autoTotal ?? 0) > 0 && ((attempt.autoCorrect ?? 0) / attempt.autoTotal!) * 100 < ACHIEVED_THRESHOLD_PCT;
+  const canRetry = weakDims.length > 0 || overallLow;
+  const now = new Date();
+  const quizOpenNow =
+    quiz.status === "OPEN" && now >= quiz.opensAt && now <= quiz.closesAt;
   const reading = attempt.reading?.status === "PUBLISHED" ? attempt.reading : null;
 
   return (
@@ -64,6 +75,29 @@ export default async function SiswaKokurikulerHasilPage({ params }: { params: Pr
           <p className="metric-d">{attempt.finalScore !== null ? "final" : "menunggu nilai esai"}</p>
         </div>
       </div>
+
+      {canRetry && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <p className="tbl-k">KESEMPATAN MENGULANG</p>
+          <p style={{ marginBottom: 10 }}>
+            {weakDims.length > 0
+              ? `Ketercapaianmu di dimensi ${weakDims.join(", ")} masih di bawah ${ACHIEVED_THRESHOLD_PCT}%.`
+              : `Skor objektifmu masih di bawah ${ACHIEVED_THRESHOLD_PCT}%.`}{" "}
+            Kamu boleh mengerjakan ulang bagian itu saja; bagian yang sudah mencapai {ACHIEVED_THRESHOLD_PCT}% dan foto
+            jawabanmu tidak berubah.
+          </p>
+          {quizOpenNow ? (
+            <RetryButton
+              quizId={quiz.id}
+              label={weakDims.length > 0 ? "Kerjakan ulang bagian di bawah 70%" : "Kerjakan ulang kuis"}
+            />
+          ) : (
+            <p className="hint">
+              Kuis ini sedang ditutup. Minta gurumu membuka kembali jadwalnya agar kamu bisa mengulang.
+            </p>
+          )}
+        </div>
+      )}
 
       <p className="tbl-k">JAWABAN</p>
       <div className="card" style={{ marginBottom: 24 }}>

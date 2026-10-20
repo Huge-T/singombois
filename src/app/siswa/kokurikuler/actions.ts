@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { gradeObjectiveAnswer, computeKokurikulerFinalScore } from "@/lib/kokurikulerScore";
+import { summarizeKokurikulerPersonalityPattern } from "@/lib/kokurikulerPersonality";
+import { ACHIEVED_THRESHOLD_PCT } from "@/lib/kokurikulerConclusion";
+import { resetKokurikulerDimensionCore, resetKokurikulerObjectiveCore } from "@/lib/kokurikulerAccess";
 
 export interface SubmitKokurikulerState {
   error?: string;
@@ -101,5 +104,58 @@ export async function submitKokurikulerAttempt(
   });
 
   revalidatePath("/siswa/kokurikuler");
+  return { ok: true };
+}
+
+/**
+ * Siswa mengulang bagian yang ketercapaiannya di bawah 70%: hanya dimensi di
+ * bawah ambang yang dibuka ulang (dimensi lain dan foto uraian tetap).
+ * Bila soal tidak bertag dimensi, seluruh soal objektif dibuka ulang jika
+ * skor objektif keseluruhan di bawah 70%. Hanya selama kuis masih dibuka.
+ */
+export async function retryBelowThreshold(quizId: string): Promise<SubmitKokurikulerState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "STUDENT") return { error: "Tidak diizinkan" };
+
+  const student = await prisma.student.findUnique({ where: { id: session.user.id } });
+  if (!student) return { error: "Tidak ditemukan" };
+
+  const quiz = await prisma.kokurikulerQuiz.findUnique({
+    where: { id: quizId },
+    include: { questions: true, targetedStudents: true },
+  });
+  if (!quiz || quiz.classId !== student.classId) return { error: "Kuis tidak ditemukan" };
+  if (quiz.targetedStudents.length > 0 && !quiz.targetedStudents.some((t) => t.studentId === student.id)) {
+    return { error: "Tidak diizinkan" };
+  }
+  const now = new Date();
+  if (quiz.status !== "OPEN" || now < quiz.opensAt || now > quiz.closesAt) {
+    return { error: "Kuis sedang tidak dibuka. Minta gurumu membuka kembali jadwalnya." };
+  }
+
+  const attempt = await prisma.kokurikulerAttempt.findUnique({
+    where: { quizId_studentId: { quizId, studentId: student.id } },
+    include: { answers: true },
+  });
+  if (!attempt?.submittedAt) return { error: "Kuis belum dikumpulkan" };
+
+  const tallies = summarizeKokurikulerPersonalityPattern(quiz.questions, attempt.answers).dimensionTallies;
+  const weak = tallies.filter((t) => t.total > 0 && t.pct < ACHIEVED_THRESHOLD_PCT).map((t) => t.dimension);
+
+  if (tallies.length > 0) {
+    if (weak.length === 0) return { error: "Semua dimensi sudah mencapai 70%, tidak perlu mengulang." };
+    for (const dimension of weak) await resetKokurikulerDimensionCore(attempt.id, dimension);
+  } else {
+    const total = attempt.autoTotal ?? 0;
+    const pct = total > 0 ? ((attempt.autoCorrect ?? 0) / total) * 100 : 0;
+    if (total > 0 && pct >= ACHIEVED_THRESHOLD_PCT) {
+      return { error: "Nilaimu sudah mencapai 70%, tidak perlu mengulang." };
+    }
+    await resetKokurikulerObjectiveCore(attempt.id);
+  }
+
+  revalidatePath("/siswa/kokurikuler");
+  revalidatePath(`/siswa/kokurikuler/${quizId}`);
+  revalidatePath(`/guru/kokurikuler/${quizId}/hasil`);
   return { ok: true };
 }
